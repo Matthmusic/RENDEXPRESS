@@ -8,7 +8,10 @@ if (!ipcMain) {
   process.exit(1)
 }
 
-const PY_SCRIPT = path.resolve(__dirname, '../../python_backend/render_tree.py')
+const APP_ROOT = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..', '..')
+const PY_SCRIPT = app.isPackaged
+  ? path.join(process.resourcesPath, 'python_backend', 'render_tree.py')
+  : path.resolve(__dirname, '../../python_backend/render_tree.py')
 const PY_CMD = process.env.PYTHON || 'python'
 let mainWindow = null
 const isDev = !!process.env.VITE_DEV_SERVER_URL
@@ -46,7 +49,9 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 800,
     backgroundColor: '#050914',
-    icon: path.join(__dirname, 'rendexpress.ico'),
+    icon: app.isPackaged
+      ? path.join(process.resourcesPath, 'electron', 'rendexpress.ico')
+      : path.join(__dirname, 'rendexpress.ico'),
     title: 'Rendexpress',
     frame: false,
     titleBarStyle: 'hidden',

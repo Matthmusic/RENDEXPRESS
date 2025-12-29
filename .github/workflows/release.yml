@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-win:
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,25 +37,24 @@ jobs:
         run: npm ci
         working-directory: electron-react
 
-      - name: Build renderer
-        run: npm run build
+      - name: Build app (exe)
+        run: npm run build:electron
         working-directory: electron-react
-
-      - name: Package artifacts
-        run: |
-          tar -czf rendexpress-dist.tar.gz \
-            -C electron-react dist \
-            -C .. python_backend
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rendexpress-dist
-          path: rendexpress-dist.tar.gz
+          name: rendexpress-win
+          path: |
+            electron-react/dist/*.exe
+            electron-react/dist/*.zip
+            electron-react/dist/win-unpacked/**
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: rendexpress-dist.tar.gz
+          files: |
+            electron-react/dist/*.exe
+            electron-react/dist/*.zip
           generate_release_notes: true

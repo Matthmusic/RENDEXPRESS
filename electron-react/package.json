@@ -1,12 +1,49 @@
 {
   "name": "electron-react",
+  "description": "Rendexpress - générateur d'arborescence email (Electron + React + Python).",
+  "author": "Matthieu Maurel",
   "private": true,
   "version": "0.0.1",
   "type": "commonjs",
   "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.rendexpress.app",
+    "productName": "Rendexpress",
+    "directories": {
+      "output": "dist",
+      "buildResources": "electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "python_backend/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "python_backend",
+        "to": "python_backend"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "electron/rendexpress.ico",
+      "artifactName": "Rendexpress-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:electron": "npm run build && electron-builder build --win",
     "lint": "eslint .",
     "preview": "vite preview",
     "electron": "cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
@@ -17,7 +54,6 @@
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "cross-spawn": "^7.0.6",
-    "electron": "^39.2.7",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -29,6 +65,8 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
