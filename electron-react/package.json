@@ -17,12 +17,17 @@
       "dist/**/*",
       "electron/**/*",
       "package.json",
-      "../python_backend/**/*"
+      "../python_backend/**/*",
+      "python_runtime/**/*"
     ],
     "extraResources": [
       {
         "from": "../python_backend",
         "to": "python_backend"
+      },
+      {
+        "from": "python_runtime",
+        "to": "python_runtime"
       }
     ],
     "win": {

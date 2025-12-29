@@ -9,8 +9,9 @@ Générateur d'arborescence de dossiers (HTML + texte) prêt à coller dans un e
 - Version affichée en UI : `0.0.3`.
 
 ## Prérequis
-- Node.js 18+ (npm).
-- Python 3.x accessible dans le PATH (`python` ou variable `PYTHON`).
+- Node.js 18+ (npm) pour le dev/build.
+- Python 3.x accessible dans le PATH (`python` ou variable `PYTHON`) pour le dev.  
+  ⚡ En production, l’installeur embarque un runtime Python (plus besoin d’installer Python sur la machine).
 - Dépendances Python (installables via `pip install -r python_backend/requirements.txt`).
 
 ## Installation & lancement (Electron)

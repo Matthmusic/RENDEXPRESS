@@ -12,7 +12,10 @@ const APP_ROOT = app.isPackaged ? process.resourcesPath : path.resolve(__dirname
 const PY_SCRIPT = app.isPackaged
   ? path.join(process.resourcesPath, 'python_backend', 'render_tree.py')
   : path.resolve(__dirname, '../../python_backend/render_tree.py')
-const PY_CMD = process.env.PYTHON || 'python'
+const PY_EMBED = app.isPackaged
+  ? path.join(process.resourcesPath, 'python_runtime', 'python.exe')
+  : path.resolve(__dirname, '../python_runtime/python.exe')
+const PY_CMD = process.env.PYTHON || (app.isPackaged ? PY_EMBED : 'python')
 let mainWindow = null
 const isDev = !!process.env.VITE_DEV_SERVER_URL
 
