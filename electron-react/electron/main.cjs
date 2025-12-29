@@ -2,6 +2,7 @@ const electron = require('electron')
 const { app, BrowserWindow, ipcMain, dialog, clipboard, shell, screen, Menu, globalShortcut } = electron
 const path = require('path')
 const { spawn } = require('cross-spawn')
+const { autoUpdater } = require('electron-updater')
 
 if (!ipcMain) {
   console.error('ipcMain indisponible. Lancer via "npm run electron" (et vérifier ELECTRON_RUN_AS_NODE vide).')
@@ -82,6 +83,27 @@ function createWindow() {
   })
 }
 
+function wireAutoUpdater() {
+  if (isDev) return
+  autoUpdater.autoDownload = false
+
+  autoUpdater.on('update-available', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update-event', { type: 'available', info })
+  })
+  autoUpdater.on('update-not-available', () => {
+    if (mainWindow) mainWindow.webContents.send('update-event', { type: 'not-available' })
+  })
+  autoUpdater.on('error', (error) => {
+    if (mainWindow) mainWindow.webContents.send('update-event', { type: 'error', message: error.message })
+  })
+  autoUpdater.on('download-progress', (progress) => {
+    if (mainWindow) mainWindow.webContents.send('update-event', { type: 'progress', progress })
+  })
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update-event', { type: 'downloaded', info })
+  })
+}
+
 ipcMain.handle('pick-folder', async () => {
   const res = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory'],
@@ -126,6 +148,29 @@ ipcMain.handle('copy-html', async (_event, htmlContent) => {
   clipboard.write({ html: htmlContent, text: htmlContent })
 })
 
+ipcMain.handle('check-updates', async () => {
+  if (isDev) return { status: 'dev' }
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    if (result && result.updateInfo && result.updateInfo.version !== app.getVersion()) {
+      return { status: 'available', version: result.updateInfo.version }
+    }
+    return { status: 'up-to-date', version: app.getVersion() }
+  } catch (err) {
+    return { status: 'error', message: String(err) }
+  }
+})
+
+ipcMain.handle('download-update', async () => {
+  if (isDev) return
+  await autoUpdater.downloadUpdate()
+})
+
+ipcMain.handle('install-update', async () => {
+  if (isDev) return
+  autoUpdater.quitAndInstall()
+})
+
 ipcMain.handle('window-close', () => {
   if (mainWindow) {
     mainWindow.close()
@@ -150,6 +195,10 @@ ipcMain.handle('window-toggle-maximize', () => {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
   createWindow()
+  wireAutoUpdater()
+  if (!isDev) {
+    autoUpdater.checkForUpdates()
+  }
   if (isDev) {
     globalShortcut.register('Control+Shift+I', () => {
       const win = BrowserWindow.getFocusedWindow()

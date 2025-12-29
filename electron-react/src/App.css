@@ -224,6 +224,17 @@
   align-items: flex-end;
 }
 
+.update-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  background: rgba(249, 115, 22, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
 .stat {
   padding: 12px 14px;
   border: 1px solid #1f2937;

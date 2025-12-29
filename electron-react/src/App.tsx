@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Maximize2, Minus, X as Close } from 'lucide-react'
 import './App.css'
 import logo from '../public/logo.svg'
@@ -21,6 +21,12 @@ function App() {
   const [viewMode, setViewMode] = useState<'html' | 'text'>('html')
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' } | null>(null)
   const [toastTimeout, setToastTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<{
+    state: 'idle' | 'available' | 'downloading' | 'downloaded' | 'error'
+    version?: string
+    progress?: number
+    message?: string
+  }>({ state: 'idle' })
 
   const showToast = (message: string, type: 'info' | 'error' = 'info') => {
     if (toastTimeout) clearTimeout(toastTimeout)
@@ -28,6 +34,42 @@ function App() {
     const t = setTimeout(() => setToast(null), 3200)
     setToastTimeout(t)
   }
+
+  useEffect(() => {
+    if (!hasApi()) return
+    const unsubscribe = window.api.onUpdateEvent((data: any) => {
+      switch (data?.type) {
+        case 'available':
+          setUpdateStatus({ state: 'available', version: data.info?.version })
+          showToast(`Mise à jour disponible (${data.info?.version}).`, 'info')
+          break
+        case 'downloaded':
+          setUpdateStatus({ state: 'downloaded', version: data.info?.version })
+          showToast('Mise à jour téléchargée. Clique pour installer.', 'info')
+          break
+        case 'progress':
+          setUpdateStatus((prev) => ({
+            state: 'downloading',
+            version: prev.version || data.progress?.version,
+            progress: Math.round(data.progress?.percent || 0),
+          }))
+          break
+        case 'error':
+          setUpdateStatus({ state: 'error', message: data.message })
+          showToast('Erreur de mise à jour.', 'error')
+          break
+        case 'not-available':
+          setUpdateStatus({ state: 'idle' })
+          break
+        default:
+          break
+      }
+    })
+    window.api.checkUpdates()
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [])
 
   const shortenPath = (value: string) => {
     if (!value) return ''
@@ -94,6 +136,17 @@ function App() {
     }
   }
 
+  const downloadUpdate = async () => {
+    if (!hasApi()) return
+    await window.api.downloadUpdate()
+    setUpdateStatus((prev) => ({ ...prev, state: 'downloading' }))
+  }
+
+  const installUpdate = async () => {
+    if (!hasApi()) return
+    await window.api.installUpdate()
+  }
+
   return (
     <div className="app-shell">
       <div className="titlebar">
@@ -146,6 +199,30 @@ function App() {
                 <span className="stat-value">{loading ? 'Génération...' : status}</span>
               </div>
             </div>
+            {updateStatus.state !== 'idle' ? (
+              <div className="update-box" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+                <div>
+                  <p className="label">Mise à jour</p>
+                  <p className="tiny">
+                    {updateStatus.state === 'available' && `Version ${updateStatus.version} disponible.`}
+                    {updateStatus.state === 'downloading' && `Téléchargement... ${updateStatus.progress ?? 0}%`}
+                    {updateStatus.state === 'downloaded' && `Version ${updateStatus.version} téléchargée.`}
+                    {updateStatus.state === 'error' && updateStatus.message}
+                  </p>
+                </div>
+                {updateStatus.state === 'available' && (
+                  <button className="btn secondary small" onClick={downloadUpdate}>
+                    Télécharger
+                  </button>
+                )}
+                {updateStatus.state === 'downloading' && <span className="pill">Téléchargement...</span>}
+                {updateStatus.state === 'downloaded' && (
+                  <button className="btn primary small" onClick={installUpdate}>
+                    Installer
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
         </header>
 

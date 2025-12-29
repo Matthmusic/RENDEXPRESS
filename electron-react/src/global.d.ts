@@ -9,6 +9,10 @@ declare global {
       windowClose: () => Promise<void>
       windowMinimize: () => Promise<void>
       windowToggleMaximize: () => Promise<void>
+      checkUpdates: () => Promise<{ status: string; version?: string }>
+      downloadUpdate: () => Promise<void>
+      installUpdate: () => Promise<void>
+      onUpdateEvent: (callback: (data: any) => void) => () => void
     }
   }
 }

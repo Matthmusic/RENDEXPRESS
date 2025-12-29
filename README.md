@@ -40,8 +40,12 @@ npm run build
   - npm ci + build du renderer.
   - Installation des dépendances Python (`pip install -r python_backend/requirements.txt`).
   - Archive `rendexpress-dist.tar.gz` (dist + python_backend) en artifact.
-  - Publication automatique sur la Release si un tag est poussé.
+  - Publication automatique sur la Release si un tag est poussé (EXE + blockmap).
 - Exemple : `git tag v0.0.1 && git push origin main --tags`.
+
+## Mise à jour auto
+- L’app vérifie les releases GitHub (provider GitHub) au démarrage.
+- Une notification apparaît si une nouvelle version est dispo, avec bouton de téléchargement puis d’installation.
 
 ## Structure
 - `electron-react/` : app Electron + React (UI principale).
