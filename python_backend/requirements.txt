@@ -1,0 +1,2 @@
+# Ajoutez ici les dépendances Python nécessaires au backend.
+# Actuellement, seuls les modules standards sont utilisés.

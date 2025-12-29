@@ -11,6 +11,7 @@ Générateur d'arborescence de dossiers (HTML + texte) prêt à coller dans un e
 ## Prérequis
 - Node.js 18+ (npm).
 - Python 3.x accessible dans le PATH (`python` ou variable `PYTHON`).
+- Dépendances Python (installables via `pip install -r python_backend/requirements.txt`).
 
 ## Installation & lancement (Electron)
 ```bash
@@ -36,6 +37,7 @@ npm run build
 ## Release GitHub (workflow)
 - Le workflow `.github/workflows/release.yml` s’exécute sur un tag `v*` ou via `workflow_dispatch` :
   - npm ci + build du renderer.
+  - Installation des dépendances Python (`pip install -r python_backend/requirements.txt`).
   - Archive `rendexpress-dist.tar.gz` (dist + python_backend) en artifact.
   - Publication automatique sur la Release si un tag est poussé.
 - Exemple : `git tag v0.0.1 && git push origin main --tags`.
