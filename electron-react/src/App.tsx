@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Maximize2, Minus, X as Close } from 'lucide-react'
 import './App.css'
+import logo from '../public/logo.svg'
 
 type RenderResponse = {
   html: string
@@ -97,7 +98,7 @@ function App() {
     <div className="app-shell">
       <div className="titlebar">
         <div className="window-title">
-          <img src="/logo.svg" alt="Rendexpress" className="title-logo" />
+          <img src={logo} alt="Rendexpress" className="title-logo" />
           <span className="window-title-text">Rendexpress</span>
         </div>
         <div className="window-controls">
@@ -123,7 +124,7 @@ function App() {
         <header className="hero">
           <div className="hero-left">
             <div className="logo-wrap">
-              <img src="/logo.svg" alt="Rendexpress" className="logo" />
+              <img src={logo} alt="Rendexpress" className="logo" />
               <div className="logo-text">
                 <p className="eyebrow">Rendexpress</p>
                 <p className="subtext">Générateur d’arborescence</p>
