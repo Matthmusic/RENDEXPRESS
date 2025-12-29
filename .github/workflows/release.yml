@@ -47,7 +47,7 @@ jobs:
           name: rendexpress-win
           path: |
             electron-react/dist/*.exe
-            electron-react/dist/win-unpacked/**
+            electron-react/dist/*.blockmap
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
