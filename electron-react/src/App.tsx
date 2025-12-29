@@ -11,7 +11,7 @@ type RenderResponse = {
 const hasApi = () => typeof window !== 'undefined' && typeof (window as any).api !== 'undefined'
 
 function App() {
-  const currentVersion = '0.0.5'
+  const currentVersion = '0.0.6'
   const [folder, setFolder] = useState('')
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
@@ -304,7 +304,7 @@ function App() {
                 <p className="tiny">Compatibilite Outlook + webmails.</p>
               </div>
               <button className="btn secondary" onClick={copyHtml} disabled={!html || loading}>
-                Copier l&apos;HTML formate
+                Copier l&apos;HTML formaté
               </button>
             </div>
           </section>

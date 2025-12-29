@@ -29,6 +29,8 @@ def build_html_tree(root_path: str) -> str:
         except OSError:
             return
         for entry in entries:
+            if entry.lower() == "thumbs.db":
+                continue
             full_path = os.path.join(path, entry)
             is_dir = os.path.isdir(full_path)
             entry_escaped = html.escape(entry)
@@ -63,6 +65,8 @@ def build_text_tree(root_path: str) -> str:
         except OSError:
             return
         for entry in entries:
+            if entry.lower() == "thumbs.db":
+                continue
             full_path = os.path.join(path, entry)
             is_dir = os.path.isdir(full_path)
             bullet = BULLET_LEVELS[min(depth - 1, 2)]
