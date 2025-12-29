@@ -6,7 +6,7 @@ Générateur d'arborescence de dossiers (HTML + texte) prêt à coller dans un e
 - Sélection d’un dossier et aperçu immédiat (HTML stylé + version texte).
 - Copie presse-papiers HTML (compatible Outlook/Gmail) et texte.
 - Thème sombre, logo intégré, toasts d’état.
-- Version affichée en UI : `0.0.4`.
+- Version affichée en UI : `0.0.5`.
 
 ## Prérequis
 - Node.js 18+ (npm) pour le dev/build.
