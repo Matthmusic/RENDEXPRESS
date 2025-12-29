@@ -47,7 +47,6 @@ jobs:
           name: rendexpress-win
           path: |
             electron-react/dist/*.exe
-            electron-react/dist/*.zip
             electron-react/dist/win-unpacked/**
 
       - name: Release
@@ -56,5 +55,5 @@ jobs:
         with:
           files: |
             electron-react/dist/*.exe
-            electron-react/dist/*.zip
+            electron-react/dist/*.blockmap
           generate_release_notes: true
