@@ -474,6 +474,32 @@
   line-height: 1.5;
 }
 
+/* Scrollbars (dark) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #f97316;
+  border-radius: 10px;
+  border: 2px solid #0b1220;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #ffad73;
+}
+
+body {
+  scrollbar-color: #111827 rgba(15, 23, 42, 0.6);
+  scrollbar-width: thin;
+}
+
 @media (max-width: 900px) {
   .hero {
     flex-direction: column;
