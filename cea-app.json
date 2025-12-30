@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "app": {
+    "id": "rendexpress",
+    "name": "Rendexpress",
+    "version": "0.0.7",
+    "description": {
+      "short": "Générateur d'arborescence de dossiers pour emails (HTML + texte)",
+      "long": "Rendexpress est une application Electron moderne qui permet de générer rapidement des arborescences de dossiers au format HTML stylé et texte brut, prêtes à être copiées dans vos emails. Interface moderne en React avec thème sombre, backend Python pour la génération, et support complet pour Outlook et Gmail. Idéal pour documenter et partager la structure de vos projets."
+    }
+  },
+  "resources": {
+    "logo": {
+      "path": "ico/rendexpress.svg",
+      "url": "https://raw.githubusercontent.com/Matthmusic/RENDEXPRESS/main/ico/rendexpress.svg"
+    },
+    "icon": {
+      "path": "ico/rendexpress.ico",
+      "url": "https://raw.githubusercontent.com/Matthmusic/RENDEXPRESS/main/ico/rendexpress.ico"
+    }
+  },
+  "detection": {
+    "windows": {
+      "files": [
+        {
+          "path": "C:\\Program Files\\Rendexpress\\Rendexpress.exe",
+          "description": "Installation standard 64-bit"
+        },
+        {
+          "path": "%LOCALAPPDATA%\\Programs\\Rendexpress\\Rendexpress.exe",
+          "description": "Installation utilisateur"
+        }
+      ],
+      "directories": [
+        {
+          "path": "%APPDATA%\\rendexpress",
+          "description": "Dossier de données utilisateur"
+        },
+        {
+          "path": "%LOCALAPPDATA%\\rendexpress",
+          "description": "Dossier de cache local"
+        }
+      ],
+      "registry": [
+        {
+          "key": "HKEY_CURRENT_USER\\SOFTWARE\\rendexpress",
+          "description": "Clé d'installation utilisateur"
+        }
+      ]
+    },
+    "priority": "files"
+  },
+  "metadata": {
+    "author": {
+      "name": "Matthmusic",
+      "url": "https://github.com/Matthmusic"
+    },
+    "category": "Productivité",
+    "tags": [
+      "productivite",
+      "arborescence",
+      "email",
+      "html",
+      "documentation",
+      "electron"
+    ],
+    "repository": {
+      "type": "github",
+      "url": "https://github.com/Matthmusic/RENDEXPRESS",
+      "branch": "main"
+    },
+    "license": "MIT",
+    "compatibility": {
+      "os": ["windows"],
+      "minVersion": "Windows 10"
+    }
+  },
+  "installation": {
+    "type": "installer",
+    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.0.7-Setup.exe"
+  },
+  "changelog": {
+    "0.0.7": {
+      "date": "2025-12-30",
+      "changes": [
+        "Mise à jour de la couleur de la scrollbar",
+        "Ajout de Content Security Policy pour supprimer les warnings Electron",
+        "Optimisations diverses de l'interface"
+      ]
+    },
+    "0.0.6": {
+      "date": "2025-12-29",
+      "changes": [
+        "Amélioration du sidebar NSIS personnalisé pour l'installeur",
+        "Ajustement de l'offset des toasts en thème sombre",
+        "Filtrage des fichiers Thumbs.db dans l'arborescence"
+      ]
+    },
+    "0.0.5": {
+      "date": "2025-12-29",
+      "changes": [
+        "Ajout du système de mise à jour automatique via GitHub",
+        "Notification de nouvelles versions disponibles",
+        "Amélioration de l'expérience utilisateur"
+      ]
+    },
+    "0.0.4": {
+      "date": "2025-12-29",
+      "changes": [
+        "Intégration d'un runtime Python embarqué",
+        "Plus besoin d'installer Python sur la machine",
+        "Installation simplifiée pour les utilisateurs finaux"
+      ]
+    }
+  }
+}
