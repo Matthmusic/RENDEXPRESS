@@ -4,7 +4,7 @@
   "app": {
     "id": "rendexpress",
     "name": "Rendexpress",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "description": {
       "short": "Générateur d'arborescence de dossiers pour emails (HTML + texte)",
       "long": "Rendexpress est une application Electron moderne qui permet de générer rapidement des arborescences de dossiers au format HTML stylé et texte brut, prêtes à être copiées dans vos emails. Interface moderne en React avec thème sombre, backend Python pour la génération, et support complet pour Outlook et Gmail. Idéal pour documenter et partager la structure de vos projets."
@@ -78,9 +78,17 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.0.7-Setup.exe"
+    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.0.8-Setup.exe"
   },
   "changelog": {
+    "0.0.8": {
+      "date": "2025-12-30",
+      "changes": [
+        "Ajout du fichier cea-app.json pour intégration au CEA App Store",
+        "Support de la détection automatique de l'application",
+        "Documentation complète des métadonnées pour le store"
+      ]
+    },
     "0.0.7": {
       "date": "2025-12-30",
       "changes": [
