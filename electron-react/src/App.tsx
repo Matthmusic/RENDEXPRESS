@@ -11,7 +11,7 @@ type RenderResponse = {
 const hasApi = () => typeof window !== 'undefined' && typeof (window as any).api !== 'undefined'
 
 function App() {
-  const currentVersion = '0.0.7'
+  const currentVersion = import.meta.env.VITE_APP_VERSION || '0.0.0'
   const [folder, setFolder] = useState('')
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')

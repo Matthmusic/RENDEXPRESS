@@ -3,7 +3,7 @@
   "description": "Rendexpress - générateur d'arborescence email (Electron + React + Python).",
   "author": "Matthieu Maurel",
   "private": true,
-  "version": "0.0.8",
+  "version": "0.0.9",
   "type": "commonjs",
   "main": "electron/main.cjs",
   "build": {
