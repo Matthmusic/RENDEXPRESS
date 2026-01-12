@@ -2,7 +2,13 @@ import argparse
 import html
 import json
 import os
+import sys
 from typing import Dict
+
+# Ensure UTF-8 encoding for stdout on Windows
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 BULLET_LEVELS = ["*", "o", "-"]
 

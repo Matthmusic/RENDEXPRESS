@@ -3,16 +3,18 @@ const { app, BrowserWindow, ipcMain, dialog, clipboard, shell, screen, Menu, glo
 const path = require('path')
 const { spawn } = require('cross-spawn')
 const { autoUpdater } = require('electron-updater')
+const safeZipHandler = require('./safezip-handler.cjs')
+const gofileHandler = require('./gofile-handler.cjs')
 
 if (!ipcMain) {
   console.error('ipcMain indisponible. Lancer via "npm run electron" (et vérifier ELECTRON_RUN_AS_NODE vide).')
   process.exit(1)
 }
 
-const APP_ROOT = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..', '..')
+const APP_ROOT = app.isPackaged ? process.resourcesPath : path.resolve(__dirname, '..')
 const PY_SCRIPT = app.isPackaged
   ? path.join(process.resourcesPath, 'python_backend', 'render_tree.py')
-  : path.resolve(__dirname, '../../python_backend/render_tree.py')
+  : path.resolve(__dirname, '../python_backend/render_tree.py')
 const PY_EMBED = app.isPackaged
   ? path.join(process.resourcesPath, 'python_runtime', 'python.exe')
   : path.resolve(__dirname, '../python_runtime/python.exe')
@@ -115,15 +117,20 @@ ipcMain.handle('pick-folder', async () => {
 
 ipcMain.handle('render-tree', async (_event, folderPath) => {
   return new Promise((resolve, reject) => {
-    const child = spawn(PY_CMD, [PY_SCRIPT, '--path', folderPath, '--format', 'json'])
+    const child = spawn(PY_CMD, [PY_SCRIPT, '--path', folderPath, '--format', 'json'], {
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    })
     let stdout = ''
     let stderr = ''
 
+    child.stdout.setEncoding('utf8')
+    child.stderr.setEncoding('utf8')
+
     child.stdout.on('data', (data) => {
-      stdout += data.toString()
+      stdout += data
     })
     child.stderr.on('data', (data) => {
-      stderr += data.toString()
+      stderr += data
     })
 
     child.on('close', (code) => {
@@ -192,6 +199,153 @@ ipcMain.handle('window-toggle-maximize', () => {
   }
 })
 
+// SafeZip IPC Handlers
+ipcMain.handle('safezip:create-job', async (_event, sourcePath) => {
+  try {
+    const job = await safeZipHandler.createJobDirectory(sourcePath)
+    return { success: true, job }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:analyze-source', async (_event, sourcePath) => {
+  try {
+    const analysis = await safeZipHandler.analyzeSourcePath(sourcePath)
+    return { success: true, analysis }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:copy-files', async (_event, job) => {
+  try {
+    const result = await safeZipHandler.copySourceToStaging(job, (progress) => {
+      if (mainWindow) {
+        mainWindow.webContents.send('safezip:copy-progress', progress)
+      }
+    })
+    return { success: true, result }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:create-zip', async (_event, job) => {
+  try {
+    const result = await safeZipHandler.createZipFromData(job, (progress) => {
+      if (mainWindow) {
+        mainWindow.webContents.send('safezip:zip-progress', progress)
+      }
+    })
+    return { success: true, result }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:create-direct-zip', async (_event, sourcePath) => {
+  try {
+    const result = await safeZipHandler.createDirectZipFromSource(sourcePath, (progress) => {
+      if (mainWindow) {
+        mainWindow.webContents.send('safezip:zip-progress', progress)
+      }
+    })
+    return { success: true, result }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:save-zip', async (_event, job) => {
+  try {
+    const res = await dialog.showSaveDialog(mainWindow, {
+      title: 'Enregistrer le ZIP',
+      defaultPath: job.zipName || 'archive.zip',
+      filters: [{ name: 'ZIP Archive', extensions: ['zip'] }]
+    })
+
+    if (res.canceled || !res.filePath) {
+      return { success: false, error: 'Cancelled' }
+    }
+
+    const result = await safeZipHandler.saveZipToDestination(job, res.filePath)
+    return { success: true, result }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:list-jobs', async () => {
+  try {
+    const jobs = await safeZipHandler.listJobs()
+    return { success: true, jobs }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:cleanup', async () => {
+  try {
+    const result = await safeZipHandler.cleanupOldJobs()
+    return { success: true, result }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:open-folder', async (_event, folderPath) => {
+  try {
+    await shell.openPath(folderPath)
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:open-wetransfer', async (_event, folderPath) => {
+  try {
+    // Open WeTransfer
+    await shell.openExternal('https://wetransfer.com/')
+
+    // If a folder path is provided, open it too
+    if (folderPath) {
+      await shell.openPath(folderPath)
+    }
+
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+// Gofile upload handlers
+ipcMain.handle('gofile:get-server', async () => {
+  try {
+    const server = await gofileHandler.getGofileServer()
+    return { success: true, server }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('gofile:upload-file', async (_event, filePath) => {
+  try {
+    console.log('[Gofile] Starting upload for file:', filePath)
+    const result = await gofileHandler.uploadToGofile(filePath, (progress) => {
+      console.log('[Gofile] Progress:', progress)
+      if (mainWindow) {
+        mainWindow.webContents.send('gofile:upload-progress', progress)
+      }
+    })
+    console.log('[Gofile] Upload result:', result)
+    return result
+  } catch (err) {
+    console.error('[Gofile] Upload error:', err)
+    return { success: false, error: err.message }
+  }
+})
+
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
   createWindow()
@@ -199,6 +353,10 @@ app.whenReady().then(() => {
   if (!isDev) {
     autoUpdater.checkForUpdates()
   }
+  // Cleanup old SafeZip jobs on startup
+  safeZipHandler.cleanupOldJobs().catch(err => {
+    console.error('SafeZip cleanup failed:', err)
+  })
   if (isDev) {
     globalShortcut.register('Control+Shift+I', () => {
       const win = BrowserWindow.getFocusedWindow()

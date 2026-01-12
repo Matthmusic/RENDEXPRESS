@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(git remote:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh release:*)",
+      "Bash(git tag:*)",
+      "Bash(npm install:*)",
+      "Bash(where gh:*)",
+      "Bash(npm run build:electron:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run electron:dev:*)",
+      "Bash(npm run electron:serve:*)",
+      "Bash(git reset:*)"
+    ]
+  }
+}
