@@ -4,10 +4,10 @@
   "app": {
     "id": "rendexpress",
     "name": "Rendexpress",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": {
-      "short": "Générateur d'arborescence et outil SafeZip pour partage sécurisé",
-      "long": "Rendexpress est une application Electron moderne tout-en-un pour la gestion de dossiers. Elle génère des arborescences HTML et texte stylées pour vos emails (Outlook, Gmail), et intègre SafeZip : un outil révolutionnaire pour nettoyer, compresser et partager vos dossiers en toute sécurité via Gofile.io. Interface React élégante avec thème sombre, backend Python intégré, mises à jour automatiques. La solution complète pour documenter et partager vos projets professionnellement."
+      "short": "G?n?rateur d?arborescence et outil SafeZip pour partage s?curis?",
+      "long": "Rendexpress est une application Electron tout?en?un pour la gestion de dossiers. Elle g?n?re des arborescences HTML et texte pr?tes pour vos emails (Outlook, Gmail), et int?gre SafeZip : un outil pour analyser, corriger, compresser et partager vos dossiers via Gofile.io. Interface React ?l?gante, backend Python int?gr?, mises ? jour automatiques. La solution compl?te pour documenter et partager vos projets."
     }
   },
   "resources": {
@@ -56,7 +56,7 @@
       "name": "Matthmusic",
       "url": "https://github.com/Matthmusic"
     },
-    "category": "Productivité",
+    "category": "Productivit?",
     "tags": [
       "productivite",
       "arborescence",
@@ -76,15 +76,25 @@
     },
     "license": "MIT",
     "compatibility": {
-      "os": ["windows"],
+      "os": [
+        "windows"
+      ],
       "minVersion": "Windows 10"
     }
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.1.3-Setup.exe"
+    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.1.4-Setup.exe"
   },
   "changelog": {
+    "0.1.4": {
+      "date": "2026-01-13",
+      "changes": [
+        "UI SafeZip : boutons et badges clarifi?s, alignements optimis?s",
+        "Copie email am?lior?e (texte + lien cliquable)",
+        "Dropzone plus compacte et zone cliquable"
+      ]
+    },
     "0.1.3": {
       "date": "2026-01-13",
       "changes": [

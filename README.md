@@ -1,54 +1,42 @@
 # Rendexpress
 
-Générateur d'arborescence de dossiers (HTML + texte) prêt à coller dans un email. UI moderne en Electron + React, logique de génération en Python.
+Rendexpress est une application Electron + React avec backend Python pour :
+- générer une arborescence (HTML + texte) prête à coller dans un email,
+- préparer des ZIP “propres” via SafeZip (analyse, correction, upload Gofile).
 
 ## Fonctionnalités
-- Sélection d’un dossier et aperçu immédiat (HTML stylé + version texte).
-- Copie presse-papiers HTML (compatible Outlook/Gmail) et texte.
-- Thème sombre, logo intégré, toasts d’état.
-- Version affichée en UI : `0.0.7`.
+- Analyse des chemins trop longs Windows et préparation SafeZip.
+- Upload Gofile avec lien de téléchargement.
+- Copie HTML compatible Outlook + texte.
+- Interface sombre, workflow en 3 étapes.
 
-## Prérequis
-- Node.js 18+ (npm) pour le dev/build.
-- Python 3.x accessible dans le PATH (`python` ou variable `PYTHON`) pour le dev.  
-  ⚡ En production, l’installeur embarque un runtime Python (plus besoin d’installer Python sur la machine).
-- Dépendances Python (installables via `pip install -r python_backend/requirements.txt`).
+## Prérequis (dev)
+- Node.js 18+
+- Python 3.x accessible dans le PATH
 
-## Installation & lancement (Electron)
+## Installation & démarrage
 ```bash
 git clone https://github.com/Matthmusic/RENDEXPRESS.git
-cd RENDEXPRESS/electron-react
+cd RENDEXPRESS
 npm install
-npm run electron:dev    # lance Vite + Electron en dev
+npm run electron:dev
 ```
 
-Vérifier Python :
+## Build
 ```bash
-python --version
-# ou définir PYTHON si nécessaire
-# set PYTHON=python3   (PowerShell)
-```
-
-## Build (renderer)
-```bash
-cd RENDEXPRESS/electron-react
 npm run build
+npm run build:electron
 ```
 
-## Release GitHub (workflow)
-- Le workflow `.github/workflows/release.yml` s’exécute sur un tag `v*` ou via `workflow_dispatch` :
-  - npm ci + build du renderer.
-  - Installation des dépendances Python (`pip install -r python_backend/requirements.txt`).
-  - Archive `rendexpress-dist.tar.gz` (dist + python_backend) en artifact.
-  - Publication automatique sur la Release si un tag est poussé (EXE + blockmap).
-- Exemple : `git tag v0.0.1 && git push origin main --tags`.
-
-## Mise à jour auto
-- L’app vérifie les releases GitHub (provider GitHub) au démarrage.
-- Une notification apparaît si une nouvelle version est dispo, avec bouton de téléchargement puis d’installation.
+## Release GitHub
+Le workflow `.github/workflows/release.yml` se déclenche sur un tag `v*` ou manuellement.
+Exemple :
+```bash
+git tag v0.1.4
+git push origin main --tags
+```
 
 ## Structure
-- `electron-react/` : app Electron + React (UI principale).
-- `electron-react/electron/main.cjs` : fenêtre, IPC, icône, titre.
-- `electron-react/src/` : composants React et styles.
-- `python_backend/render_tree.py` : génération HTML/texte de l’arborescence.
+- `src/` : UI React (SafeZip + preview)
+- `electron/` : Electron main/preload
+- `python_backend/` : génération d’arborescence

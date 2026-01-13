@@ -625,7 +625,7 @@ export default function SafeZip({
                       {analysis.isSafeForDirectTransfer ? (
                         <div className="validation-badge animate__animated animate__bounceIn">
                           <CheckCircle size={32} />
-                          <span>{phase === 'ready' ? 'Prêt' : 'Validé'}</span>
+                          <span>Validé</span>
                         </div>
                       ) : (
                         <div className="validation-badge warning animate__animated animate__bounceIn">
@@ -922,7 +922,7 @@ export default function SafeZip({
               disabled={isWorking}
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
             >
-              {phase === 'uploading' ? <Loader2 size={16} className="spinner" /> : <Upload size={16} />}
+              <Upload size={16} />
               {uploadUrl ? 'Ré-uploader Gofile' : 'Upload Gofile'}
             </button>
 
