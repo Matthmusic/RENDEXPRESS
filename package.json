@@ -3,12 +3,13 @@
   "description": "Rendexpress - générateur d'arborescence email (Electron + React + Python).",
   "author": "Matthieu Maurel",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "commonjs",
   "main": "electron/main.cjs",
   "build": {
     "appId": "com.rendexpress.app",
     "productName": "Rendexpress",
+    "asar": false,
     "directories": {
       "output": "dist",
       "buildResources": "electron"
@@ -26,13 +27,6 @@
       "package.json",
       "python_backend/**/*",
       "python_runtime/**/*"
-    ],
-    "asarUnpack": [
-      "node_modules/archiver/**/*",
-      "node_modules/archiver-utils/**/*",
-      "node_modules/zip-stream/**/*",
-      "node_modules/compress-commons/**/*",
-      "node_modules/tar-stream/**/*"
     ],
     "extraResources": [
       {
