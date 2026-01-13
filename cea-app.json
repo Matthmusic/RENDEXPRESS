@@ -4,10 +4,10 @@
   "app": {
     "id": "rendexpress",
     "name": "Rendexpress",
-    "version": "0.0.13",
+    "version": "0.1.0",
     "description": {
-      "short": "Générateur d'arborescence de dossiers pour emails (HTML + texte)",
-      "long": "Rendexpress est une application Electron moderne qui permet de générer rapidement des arborescences de dossiers au format HTML stylé et texte brut, prêtes à être copiées dans vos emails. Interface moderne en React avec thème sombre, backend Python pour la génération, et support complet pour Outlook et Gmail. Idéal pour documenter et partager la structure de vos projets."
+      "short": "Générateur d'arborescence et outil SafeZip pour partage sécurisé",
+      "long": "Rendexpress est une application Electron moderne tout-en-un pour la gestion de dossiers. Elle génère des arborescences HTML et texte stylées pour vos emails (Outlook, Gmail), et intègre SafeZip : un outil révolutionnaire pour nettoyer, compresser et partager vos dossiers en toute sécurité via Gofile.io. Interface React élégante avec thème sombre, backend Python intégré, mises à jour automatiques. La solution complète pour documenter et partager vos projets professionnellement."
     }
   },
   "resources": {
@@ -63,7 +63,11 @@
       "email",
       "html",
       "documentation",
-      "electron"
+      "electron",
+      "compression",
+      "partage",
+      "safezip",
+      "gofile"
     ],
     "repository": {
       "type": "github",
@@ -78,9 +82,27 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.0.13-Setup.exe"
+    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.1.0-Setup.exe"
   },
   "changelog": {
+    "0.1.0": {
+      "date": "2026-01-13",
+      "changes": [
+        "Ajout de SafeZip : outil complet de nettoyage, compression et partage de dossiers",
+        "Intégration de l'upload automatique vers Gofile.io avec barre de progression",
+        "Analyse intelligente des dossiers avec détection des fichiers sensibles",
+        "Option de contournement des chemins longs Windows (>260 caractères)",
+        "Refonte majeure de l'interface avec deux modes : Arborescence et SafeZip",
+        "Amélioration du système de mise à jour automatique",
+        "Optimisations de performance et corrections diverses"
+      ]
+    },
+    "0.0.13": {
+      "date": "2026-01-13",
+      "changes": [
+        "Synchronisation des versions entre package.json et cea-app.json"
+      ]
+    },
     "0.0.10": {
       "date": "2025-12-31",
       "changes": [
