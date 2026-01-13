@@ -10,7 +10,7 @@ if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-BULLET_LEVELS = ["*", "o", "-"]
+BULLET_LEVELS = ["-", "•", "○"]
 
 
 def _sorted_entries(path: str):

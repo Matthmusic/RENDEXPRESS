@@ -155,6 +155,10 @@ ipcMain.handle('copy-html', async (_event, htmlContent) => {
   clipboard.write({ html: htmlContent, text: htmlContent })
 })
 
+ipcMain.handle('copy-text', async (_event, text) => {
+  clipboard.writeText(text)
+})
+
 ipcMain.handle('check-updates', async () => {
   if (isDev) return { status: 'dev' }
   try {
@@ -244,19 +248,6 @@ ipcMain.handle('safezip:create-zip', async (_event, job) => {
   }
 })
 
-ipcMain.handle('safezip:create-direct-zip', async (_event, sourcePath) => {
-  try {
-    const result = await safeZipHandler.createDirectZipFromSource(sourcePath, (progress) => {
-      if (mainWindow) {
-        mainWindow.webContents.send('safezip:zip-progress', progress)
-      }
-    })
-    return { success: true, result }
-  } catch (err) {
-    return { success: false, error: err.message }
-  }
-})
-
 ipcMain.handle('safezip:save-zip', async (_event, job) => {
   try {
     const res = await dialog.showSaveDialog(mainWindow, {
@@ -276,15 +267,6 @@ ipcMain.handle('safezip:save-zip', async (_event, job) => {
   }
 })
 
-ipcMain.handle('safezip:list-jobs', async () => {
-  try {
-    const jobs = await safeZipHandler.listJobs()
-    return { success: true, jobs }
-  } catch (err) {
-    return { success: false, error: err.message }
-  }
-})
-
 ipcMain.handle('safezip:cleanup', async () => {
   try {
     const result = await safeZipHandler.cleanupOldJobs()
@@ -297,22 +279,6 @@ ipcMain.handle('safezip:cleanup', async () => {
 ipcMain.handle('safezip:open-folder', async (_event, folderPath) => {
   try {
     await shell.openPath(folderPath)
-    return { success: true }
-  } catch (err) {
-    return { success: false, error: err.message }
-  }
-})
-
-ipcMain.handle('safezip:open-wetransfer', async (_event, folderPath) => {
-  try {
-    // Open WeTransfer
-    await shell.openExternal('https://wetransfer.com/')
-
-    // If a folder path is provided, open it too
-    if (folderPath) {
-      await shell.openPath(folderPath)
-    }
-
     return { success: true }
   } catch (err) {
     return { success: false, error: err.message }
@@ -344,6 +310,81 @@ ipcMain.handle('gofile:upload-file', async (_event, filePath) => {
     console.error('[Gofile] Upload error:', err)
     return { success: false, error: err.message }
   }
+})
+
+// Bitly handler for creating short links
+ipcMain.handle('bitly:create-short-link', async (_event, longUrl, customAlias) => {
+  const https = require('https')
+
+  // Note: L'utilisateur doit fournir sa propre clé API Bit.ly
+  // Créer un compte gratuit sur https://bitly.com/ et générer une clé API
+  const BITLY_TOKEN = process.env.BITLY_TOKEN || ''
+
+  if (!BITLY_TOKEN) {
+    return {
+      success: false,
+      error: 'Clé API Bit.ly manquante. Définissez BITLY_TOKEN dans les variables d\'environnement.'
+    }
+  }
+
+  return new Promise((resolve) => {
+    const postData = JSON.stringify({
+      long_url: longUrl,
+      ...(customAlias && { custom_bitlinks: [customAlias] })
+    })
+
+    const options = {
+      hostname: 'api-ssl.bitly.com',
+      port: 443,
+      path: '/v4/shorten',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${BITLY_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }
+
+    const req = https.request(options, (res) => {
+      let data = ''
+
+      res.on('data', (chunk) => {
+        data += chunk
+      })
+
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data)
+          if (res.statusCode === 200 || res.statusCode === 201) {
+            resolve({
+              success: true,
+              shortLink: response.link
+            })
+          } else {
+            resolve({
+              success: false,
+              error: response.message || `Erreur HTTP ${res.statusCode}`
+            })
+          }
+        } catch (err) {
+          resolve({
+            success: false,
+            error: 'Erreur de parsing de la réponse Bit.ly'
+          })
+        }
+      })
+    })
+
+    req.on('error', (err) => {
+      resolve({
+        success: false,
+        error: err.message
+      })
+    })
+
+    req.write(postData)
+    req.end()
+  })
 })
 
 app.whenReady().then(() => {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { SafeZipJob, CopyProgress, ZipProgress, PathAnalysis } from './types/safezip'
 import type { GofileUploadProgress } from './types/gofile'
-import { Package, FolderOpen, Download, AlertTriangle, CheckCircle, Loader2, X, Upload, Copy } from 'lucide-react'
+import { Package, FolderOpen, Download, AlertTriangle, CheckCircle, Loader2, X, Upload, Copy, Mail } from 'lucide-react'
 
 type Phase = 'idle' | 'analyzing' | 'copying' | 'zipping' | 'ready' | 'uploading' | 'error'
 
@@ -39,6 +39,9 @@ export default function SafeZip({
   const [uploadUrl, setUploadUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
+  const [copyNotice, setCopyNotice] = useState<string | null>(null)
+  const [copyNoticeTarget, setCopyNoticeTarget] = useState<'link' | 'email' | null>(null)
+  const [wasCorrected, setWasCorrected] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [viewMode, setViewMode] = useState<'html' | 'text'>('html')
   const [bypassLongPaths, setBypassLongPaths] = useState(false)
@@ -46,6 +49,7 @@ export default function SafeZip({
   const cleanupZipRef = useRef<(() => void) | null>(null)
   const cleanupUploadRef = useRef<(() => void) | null>(null)
   const autoZipSourceRef = useRef<string | null>(null)
+  const copyNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Setup progress listeners
   useEffect(() => {
@@ -77,11 +81,20 @@ export default function SafeZip({
     return () => clearTimeout(timer)
   }, [toast])
 
+  useEffect(() => {
+    return () => {
+      if (copyNoticeTimeoutRef.current) {
+        clearTimeout(copyNoticeTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Auto-analyze when source path changes
   useEffect(() => {
     if (!sourcePath || !window.api?.safeZip) return
 
     const analyzeSource = async () => {
+      setWasCorrected(false)
       setPhase('analyzing')
       setError(null)
       setBypassLongPaths(false)
@@ -121,11 +134,24 @@ export default function SafeZip({
     if (phase !== 'idle' || currentJob) return
 
     autoZipSourceRef.current = sourcePath
-    handlePrepare()
+    handlePrepare({ corrected: false })
   }, [analysis, sourcePath, phase, currentJob, bypassLongPaths, canBypassLongPaths])
 
   const showToast = (message: string, type: Toast['type'] = 'info') => {
     setToast({ message, type })
+  }
+
+  const showCopyNotice = (message: string, target: 'link' | 'email') => {
+    setCopyNotice(message)
+    setCopyNoticeTarget(target)
+    if (copyNoticeTimeoutRef.current) {
+      clearTimeout(copyNoticeTimeoutRef.current)
+    }
+    copyNoticeTimeoutRef.current = setTimeout(() => {
+      setCopyNotice(null)
+      setCopyNoticeTarget(null)
+      copyNoticeTimeoutRef.current = null
+    }, 2000)
   }
 
   const handlePickFolder = async () => {
@@ -233,7 +259,7 @@ export default function SafeZip({
     }
   }
 
-  const handlePrepare = async () => {
+  const handlePrepare = async ({ corrected }: { corrected: boolean }) => {
     if (!sourcePath) return
     if (!window.api?.safeZip) {
       setError('API SafeZip non disponible')
@@ -241,6 +267,7 @@ export default function SafeZip({
       return
     }
 
+    setWasCorrected(corrected)
     setPhase('analyzing')
     setError(null)
     setCopyProgress(null)
@@ -370,7 +397,7 @@ export default function SafeZip({
         setPhase('ready')
 
         // Copy URL to clipboard
-        await navigator.clipboard.writeText(result.downloadUrl)
+        await copyTextToClipboard(result.downloadUrl)
         showToast('Lien copié dans le presse-papier !', 'success')
       } else {
         throw new Error(result.error || 'Upload échoué')
@@ -383,12 +410,45 @@ export default function SafeZip({
     }
   }
 
+  const copyTextToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch (err) {
+      if (window.api?.copyText) {
+        await window.api.copyText(text)
+        return
+      }
+      throw err
+    }
+  }
+
   const handleCopyUploadUrl = async () => {
     if (!uploadUrl) return
 
     try {
-      await navigator.clipboard.writeText(uploadUrl)
+      await copyTextToClipboard(uploadUrl)
       showToast('Lien copié !', 'success')
+      showCopyNotice('Lien copié', 'link')
+    } catch (err) {
+      showToast('Erreur de copie', 'error')
+    }
+  }
+
+  const handleCopyEmailText = async () => {
+    if (!uploadUrl) return
+
+    try {
+      const zipName = currentJob?.zipPath?.split(/[\\/]/).pop() || 'archive'
+      const emailText = `Retrouvez le dossier (${zipName}) en cliquant ici :\n${uploadUrl}`
+      const emailHtml = `Retrouvez le dossier (<a href="${uploadUrl}">${zipName}</a>) en cliquant <a href="${uploadUrl}">ici</a>`
+      if (window.api?.copyHtml) {
+        await window.api.copyHtml(emailHtml)
+      } else {
+        await copyTextToClipboard(emailText)
+      }
+      showToast('Texte pour email copié !', 'success')
+      showCopyNotice('Texte email copié', 'email')
     } catch (err) {
       showToast('Erreur de copie', 'error')
     }
@@ -406,6 +466,7 @@ export default function SafeZip({
     setUploadUrl(null)
     setUploadProgress(null)
     setBypassLongPaths(false)
+    setWasCorrected(false)
     autoZipSourceRef.current = null
     // Clear the tree in parent component
     if (onClearTree) {
@@ -425,22 +486,22 @@ export default function SafeZip({
 
   const getHeaderStatus = () => {
     if (error) return 'Erreur'
-    if (uploadUrl) return 'Lien genere'
+    if (uploadUrl) return 'Lien généré'
     switch (phase) {
       case 'analyzing':
         return 'Analyse en cours...'
       case 'copying':
         return 'Copie en cours...'
       case 'zipping':
-        return 'Creation du ZIP...'
+        return 'Création du ZIP...'
       case 'uploading':
         return 'Upload en cours...'
       case 'ready':
-        return 'ZIP pret'
+        return 'ZIP prêt'
       case 'idle':
       default:
-        if (analysis) return 'Analyse terminee'
-        return sourcePath ? 'Pret' : 'En attente'
+        if (analysis) return 'Analyse terminée'
+        return sourcePath ? 'Prêt' : 'En attente'
     }
   }
 
@@ -475,17 +536,19 @@ export default function SafeZip({
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                onClick={sourcePath ? undefined : handlePickFolder}
+                style={{ cursor: sourcePath ? 'default' : 'pointer' }}
               >
                 {sourcePath ? (
                   <>
                     <div className="dropzone-icon-wrap">
-                      <FolderOpen size={52} className="dropzone-folder-icon" />
+                      <FolderOpen size={40} className="dropzone-folder-icon" />
                       <button
                         className="dropzone-remove"
                         onClick={handleClearSource}
                         aria-label="Retirer le dossier"
                       >
-                        <X size={50} strokeWidth={3.6} />
+                        <X size={38} strokeWidth={3.6} />
                       </button>
                     </div>
                     <p className="dropzone-path">{sourcePath}</p>
@@ -493,10 +556,7 @@ export default function SafeZip({
                 ) : (
                   <>
                     <FolderOpen size={32} />
-                    <p>Glissez-déposez un dossier ici</p>
-                    <button className="btn btn-secondary" onClick={handlePickFolder}>
-                      Ou sélectionner un dossier
-                    </button>
+                    <p>Glissez-déposez un dossier ici ou cliquez dans la zone pour sélectionner un dossier</p>
                   </>
                 )}
               </div>
@@ -524,12 +584,29 @@ export default function SafeZip({
 
         {/* Analysis & Job Panel */}
         <div className="panel safezip-job-panel">
-          <h2>2. Analyse et préparation</h2>
+          <div className="job-panel-header">
+            <h2>2. Analyse et préparation</h2>
+            {analysis && phase === 'ready' && (
+              analysis.isSafeForDirectTransfer || wasCorrected || !analysis.needsPreparation ? (
+                <div className="validation-badge compact animate__animated animate__bounceIn">
+                  <CheckCircle size={24} />
+                  <span>OK</span>
+                </div>
+              ) : (
+                <div className="validation-badge warning compact animate__animated animate__bounceIn">
+                  <AlertTriangle size={24} />
+                  <span>À corriger</span>
+                </div>
+              )
+            )}
+          </div>
 
-          {analysis && (
-            <div className="analysis-info">
-              {/* Only show stats before correction (not in ready phase) */}
-              {phase !== 'ready' && (
+          <div className="job-panel-content">
+            <div className="job-panel-left">
+              {analysis && (
+                <div className="analysis-info">
+              {/* Only show stats when not processing */}
+              {(phase === 'idle' || phase === 'error') && (
                 <div className="stats-grid">
                   <div className="stat-item">
                     <span className="stat-label">Fichiers</span>
@@ -543,6 +620,21 @@ export default function SafeZip({
                     <span className="stat-label">Chemin max</span>
                     <span className="stat-value">{analysis.maxPathLength} car.</span>
                   </div>
+                  {analysis && (phase === 'idle' || phase === 'error') && (
+                    <div className="stat-item badge-item">
+                      {analysis.isSafeForDirectTransfer ? (
+                        <div className="validation-badge animate__animated animate__bounceIn">
+                          <CheckCircle size={32} />
+                          <span>{phase === 'ready' ? 'Prêt' : 'Validé'}</span>
+                        </div>
+                      ) : (
+                        <div className="validation-badge warning animate__animated animate__bounceIn">
+                          <AlertTriangle size={32} />
+                          <span>À corriger</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -558,7 +650,7 @@ export default function SafeZip({
                     </span>
                   </div>
                   <p className="risk-message" style={{ marginTop: '8px' }}>
-                    Tous les fichiers ont des chemins sûrs (&lt;225 caractères). Vous pouvez compresser manuellement et envoyer directement sur WeTransfer.
+                    Tous les fichiers ont des chemins sûrs (&lt;240 caractères). Vous pouvez compresser manuellement et envoyer directement sur Gofile.
                   </p>
                 </div>
               )}
@@ -595,7 +687,7 @@ export default function SafeZip({
                     </span>
                   </div>
                   <p className="risk-message" style={{ marginTop: '8px' }}>
-                    Ces fichiers dépassent 225 caractères et nécessitent une correction :
+                    Ces fichiers dépassent 240 caractères et nécessitent une correction :
                   </p>
                   <ul style={{ marginTop: '8px', fontSize: '13px', opacity: 0.9, listStyle: 'none', padding: 0, maxHeight: '300px', overflowY: 'auto' }}>
                     {analysis.problematicFiles.map((file, idx) => (
@@ -615,24 +707,24 @@ export default function SafeZip({
                   </p>
                 </div>
               )}
-            </div>
-          )}
+                </div>
+              )}
 
-          {currentJob && (
-            <div className="job-info">
-              <div className="info-item">
-                <span className="label">Job ID :</span>
-                <span className="value">{currentJob.id}</span>
-              </div>
-              <div className="info-item">
-                <span className="label">Staging :</span>
-                <span className="value">{currentJob.stagingPath}</span>
-              </div>
-            </div>
-          )}
+                  {currentJob && (
+                <div className="job-info">
+                  <div className="info-item">
+                    <span className="label">Job ID :</span>
+                    <span className="value">{currentJob.id}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="label">Staging :</span>
+                    <span className="value">{currentJob.stagingPath}</span>
+                  </div>
+                </div>
+              )}
 
-          {phase === 'copying' && copyProgress && (
-            <div className="progress-section">
+              {phase === 'copying' && copyProgress && (
+                <div className="progress-section">
               <div className="progress-header">
                 <span>{copyProgress.phase === 'scanning' ? 'Scan en cours...' : 'Copie en cours...'}</span>
                 {copyProgress.phase === 'copying' && (
@@ -650,11 +742,11 @@ export default function SafeZip({
                   <div className="progress-file">{copyProgress.currentFile}</div>
                 </>
               )}
-            </div>
-          )}
+                </div>
+              )}
 
-          {phase === 'zipping' && zipProgress && (
-            <div className="progress-section">
+              {phase === 'zipping' && zipProgress && (
+                <div className="progress-section">
               <div className="progress-header">
                 <span>Création du ZIP...</span>
                 <span>{zipProgress.current} / {zipProgress.total}</span>
@@ -666,13 +758,13 @@ export default function SafeZip({
                 />
               </div>
               <div className="progress-file">{zipProgress.currentFile}</div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {phase === 'uploading' && uploadProgress && (
-            <div className="progress-section">
+              {phase === 'uploading' && uploadProgress && (
+                <div className="progress-section">
               <div className="progress-header">
-                <span>
+                <span className={uploadProgress.phase === 'finalizing' ? 'progress-finalizing' : undefined}>
                   {uploadProgress.phase === 'preparing' && 'Préparation de l\'upload...'}
                   {uploadProgress.phase === 'uploading' && 'Upload en cours...'}
                   {uploadProgress.phase === 'finalizing' && 'Finalisation...'}
@@ -694,22 +786,22 @@ export default function SafeZip({
                   {formatBytes(uploadProgress.loaded)} / {formatBytes(uploadProgress.total)}
                 </div>
               )}
-            </div>
-          )}
+                </div>
+              )}
 
-          {error && (
-            <div className="error-box">
-              <AlertTriangle size={20} />
-              <span>{error}</span>
-            </div>
-          )}
+              {error && (
+                <div className="error-box">
+                  <AlertTriangle size={20} />
+                  <span>{error}</span>
+                </div>
+              )}
 
-          <div className="actions">
+              <div className="actions">
             {/* Show Prepare button only if preparation is needed */}
             {analysis?.needsPreparation && !analysis.hasShortNames && (
               <button
                 className="btn btn-primary btn-blink-orange"
-                onClick={handlePrepare}
+                onClick={() => handlePrepare({ corrected: true })}
                 disabled={!sourcePath || isWorking || phase === 'ready'}
               >
                 {isWorking ? <Loader2 size={16} className="spinner" /> : <Package size={16} />}
@@ -722,14 +814,17 @@ export default function SafeZip({
                 className="btn btn-secondary"
                 onClick={() => {
                   setBypassLongPaths(true)
-                  showToast('Bypass active, creation du ZIP...', 'info')
-                  handlePrepare()
+                  showToast('Bypass activé, création du ZIP...', 'info')
+                  handlePrepare({ corrected: true })
                 }}
                 disabled={!sourcePath || isWorking || phase === 'ready'}
               >
                 Forcer le ZIP (240-250)
               </button>
             )}
+
+              </div>
+            </div>
 
           </div>
         </div>
@@ -776,41 +871,74 @@ export default function SafeZip({
                   {uploadUrl}
                 </a>
               </div>
-              <button
-                className="btn btn-secondary"
-                onClick={handleCopyUploadUrl}
-                style={{ flexShrink: 0 }}
-              >
-                <Copy size={16} />
-              </button>
+              <div className="copy-actions">
+                <div className="copy-buttons">
+                  <div className="copy-btn-wrap">
+                    {copyNotice && copyNoticeTarget === 'link' && (
+                      <div className="copy-tooltip" role="status">
+                        {copyNotice}
+                      </div>
+                    )}
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleCopyUploadUrl}
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                  <div className="copy-btn-wrap">
+                    {copyNotice && copyNoticeTarget === 'email' && (
+                      <div className="copy-tooltip" role="status">
+                        {copyNotice}
+                      </div>
+                    )}
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleCopyEmailText}
+                      title="Copier le texte formaté pour email"
+                    >
+                      <Mail size={16} />
+                      Copier pour email
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           <div className="ready-actions">
-            {/* Primary upload button */}
+            <button
+              className="btn btn-primary"
+              onClick={handleSaveZip}
+              style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+            >
+              <Download size={16} />
+              Enregistrer ZIP
+            </button>
+
             <button
               className="btn btn-primary"
               onClick={handleUploadToGofile}
               disabled={isWorking}
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
             >
-              {isWorking ? <Loader2 size={16} className="spinner" /> : <Upload size={16} />}
-              {uploadUrl ? 'Ré-uploader sur Gofile' : 'Upload automatique (Gofile)'}
-            </button>
-
-            <button className="btn btn-secondary" onClick={handleOpenFolder}>
-              <FolderOpen size={16} />
-              Ouvrir le dossier
-            </button>
-
-            <button className="btn btn-secondary" onClick={handleSaveZip}>
-              <Download size={16} />
-              Enregistrer le ZIP...
+              {phase === 'uploading' ? <Loader2 size={16} className="spinner" /> : <Upload size={16} />}
+              {uploadUrl ? 'Ré-uploader Gofile' : 'Upload Gofile'}
             </button>
 
             <button className="btn btn-secondary" onClick={handleOpenTree}>
               <FolderOpen size={16} />
-              Générer l'arborescence
+              Générer Arborescence
+            </button>
+
+            
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={handleOpenFolder}
+              title="Ouvrir le dossier de staging"
+              aria-label="Ouvrir le dossier de staging"
+            >
+              <FolderOpen size={20} />
             </button>
           </div>
         </div>
@@ -823,19 +951,19 @@ export default function SafeZip({
             <div>
               <p className="eyebrow subtle">Arborescence</p>
               <h2>Aperçu immédiat</h2>
-              <p className="hint">Contrôle le rendu avant de copier. Tout est déjà stylé.</p>
+              <p className="hint">Contrôle le rendu avant de copier.</p>
             </div>
             <div className="preview-actions">
               <div className="toggle">
                 <button
-                  className={`btn ghost small ${viewMode === 'html' ? 'active' : ''}`}
+                  className={`btn ${viewMode === 'html' ? 'primary' : 'secondary'} small`}
                   onClick={() => setViewMode('html')}
                   disabled={treeLoading}
                 >
                   Version HTML
                 </button>
                 <button
-                  className={`btn ghost small ${viewMode === 'text' ? 'active' : ''}`}
+                  className={`btn ${viewMode === 'text' ? 'primary' : 'secondary'} small`}
                   onClick={() => setViewMode('text')}
                   disabled={treeLoading}
                 >
@@ -865,7 +993,7 @@ export default function SafeZip({
               <p className="label">Copie</p>
               <p className="tiny">Compatibilite Outlook + webmails.</p>
             </div>
-            <button className="btn secondary" onClick={onCopyHtml} disabled={!treeHtml || treeLoading}>
+            <button className="btn btn-secondary" onClick={onCopyHtml} disabled={!treeHtml || treeLoading}>
               Copier pour mail
             </button>
           </div>

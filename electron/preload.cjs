@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('api', {
   pickFolder: () => ipcRenderer.invoke('pick-folder'),
   renderTree: (path) => ipcRenderer.invoke('render-tree', path),
   copyHtml: (html) => ipcRenderer.invoke('copy-html', html),
+  copyText: (text) => ipcRenderer.invoke('copy-text', text),
   windowClose: () => ipcRenderer.invoke('window-close'),
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowToggleMaximize: () => ipcRenderer.invoke('window-toggle-maximize'),
@@ -27,12 +28,9 @@ contextBridge.exposeInMainWorld('api', {
     analyzeSource: (sourcePath) => ipcRenderer.invoke('safezip:analyze-source', sourcePath),
     copyFiles: (job) => ipcRenderer.invoke('safezip:copy-files', job),
     createZip: (job) => ipcRenderer.invoke('safezip:create-zip', job),
-    createDirectZip: (sourcePath) => ipcRenderer.invoke('safezip:create-direct-zip', sourcePath),
     saveZip: (job) => ipcRenderer.invoke('safezip:save-zip', job),
-    listJobs: () => ipcRenderer.invoke('safezip:list-jobs'),
     cleanup: () => ipcRenderer.invoke('safezip:cleanup'),
     openFolder: (folderPath) => ipcRenderer.invoke('safezip:open-folder', folderPath),
-    openWeTransfer: (folderPath) => ipcRenderer.invoke('safezip:open-wetransfer', folderPath),
     onCopyProgress: (callback) => {
       const listener = (_event, data) => callback(data)
       ipcRenderer.on('safezip:copy-progress', listener)
@@ -52,5 +50,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.on('gofile:upload-progress', listener)
       return () => ipcRenderer.removeListener('gofile:upload-progress', listener)
     },
+  },
+  bitly: {
+    createShortLink: (longUrl, customAlias) => ipcRenderer.invoke('bitly:create-short-link', longUrl, customAlias),
   },
 })

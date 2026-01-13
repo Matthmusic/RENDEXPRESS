@@ -128,7 +128,7 @@ function App() {
   }
 
   const headerFolder = safeZipHeader.folder
-  const headerStatusValue = safeZipHeader.loading ? 'Generation...' : safeZipHeader.status
+  const headerStatusValue = safeZipHeader.loading ? 'Génération...' : safeZipHeader.status
 
   return (
     <div className="app-shell">
@@ -167,8 +167,8 @@ function App() {
                 <p className="subtext">Vérification et préparation de rendus</p>
               </div>
             </div>
-            <h1>Package securise pour envoi de gros rendus.</h1>
-            <p className="lede">Evite les problemes de chemins trop longs sous Windows. Prepare un ZIP optimise pour GoFile.</p>
+            <h1>Package sécurisé pour envoi de gros rendus.</h1>
+            <p className="lede">Évite les problèmes de chemins trop longs sous Windows. Prépare un ZIP optimisé pour Gofile.</p>
           </div>
           <div className="right-stack">
             <div className="stats" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
