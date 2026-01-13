@@ -32,7 +32,7 @@ npm run build:electron
 Le workflow `.github/workflows/release.yml` se déclenche sur un tag `v*` ou manuellement.
 Exemple :
 ```bash
-git tag v0.1.7
+git tag v0.1.8
 git push origin main --tags
 ```
 

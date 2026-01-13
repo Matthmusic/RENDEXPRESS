@@ -15,7 +15,16 @@
       "Bash(npm run dev:*)",
       "Bash(npm run electron:dev:*)",
       "Bash(npm run electron:serve:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(ls:*)",
+      "Skill(deploy)",
+      "Skill(deploy:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \".claude/skills/deploy/create-release.ps1\" -Version \"0.1.0\" -ChangelogNotes \"$\\(cat <<''EOF''\n## Nouveautés\n\n- **SafeZip** : Outil complet de nettoyage, compression et partage de dossiers\n- **Gofile.io** : Intégration de l''upload automatique avec barre de progression\n- **Analyse intelligente** : Détection automatique des fichiers sensibles avant compression\n- **Chemins longs Windows** : Option de contournement pour les chemins >260 caractères\n- **Interface refonte** : Deux modes distincts \\(Arborescence et SafeZip\\)\n- **Mises à jour** : Amélioration du système de mise à jour automatique\n- **Performance** : Optimisations diverses et corrections de bugs\n\n## Installation\n\nTéléchargez l''installeur ci-dessous et lancez-le pour installer Rendexpress sur votre machine Windows.\n\n---\n\n🤖 Généré avec [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \".claude/skills/deploy/create-release.ps1\" -Version \"0.1.0\" -ChangelogNotes \"$\\(cat <<''EOF''\n## Nouveautés\n\n- **SafeZip** : Outil complet de nettoyage, compression et partage de dossiers\n- **Gofile.io** : Intégration de l''upload automatique avec barre de progression\n- **Analyse intelligente** : Détection automatique des fichiers sensibles avant compression\n- **Chemins longs Windows** : Option de contournement pour les chemins >260 caractères\n- **Interface refonte** : Deux modes distincts \\(Arborescence et SafeZip\\)\n- **Mises à jour** : Amélioration du système de mise à jour automatique\n- **Performance** : Optimisations diverses et corrections de bugs\n\n## Installation\n\nTéléchargez l''installeur ci-dessous et lancez-le pour installer Rendexpress sur votre machine Windows.\n\n**Note importante** : Cette version contient un bug connu qui sera corrigé dans la v0.1.1 \\(problème de dépendance archiver-utils\\).\n\n---\n\n🤖 Généré avec [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(npm ls:*)",
+      "Bash(powershell:*)",
+      "Bash(gh run list:*)",
+      "Bash(python:*)"
     ]
   }
 }

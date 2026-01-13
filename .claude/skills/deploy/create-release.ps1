@@ -32,7 +32,7 @@ if (-not $token) {
 $owner = "Matthmusic"
 $repo = "RENDEXPRESS"
 $tag = "v$Version"
-$installerPath = "electron-react\dist\Rendexpress-$Version-Setup.exe"
+$installerPath = "dist\Rendexpress-$Version-Setup.exe"
 
 # Check if installer exists
 if (-not (Test-Path $installerPath)) {

@@ -10,6 +10,7 @@ type RenderResponse = {
 }
 
 const hasApi = () => typeof window !== 'undefined' && typeof (window as any).api !== 'undefined'
+const APP_VERSION = '0.1.8'
 
 function App() {
   const [html, setHtml] = useState('')
@@ -107,13 +108,26 @@ function App() {
 
   const downloadUpdate = async () => {
     if (!hasApi()) return
-    await window.api.downloadUpdate()
-    setUpdateStatus((prev) => ({ ...prev, state: 'downloading' }))
+    try {
+      setUpdateStatus((prev) => ({ ...prev, state: 'downloading', progress: 0 }))
+      showToast('Début du téléchargement...', 'info')
+      await window.api.downloadUpdate()
+    } catch (err) {
+      console.error('Download error:', err)
+      showToast('Erreur lors du téléchargement.', 'error')
+      setUpdateStatus((prev) => ({ ...prev, state: 'available' }))
+    }
   }
 
   const installUpdate = async () => {
     if (!hasApi()) return
-    await window.api.installUpdate()
+    try {
+      showToast('Installation en cours...', 'info')
+      await window.api.installUpdate()
+    } catch (err) {
+      console.error('Install error:', err)
+      showToast('Erreur lors de l\'installation.', 'error')
+    }
   }
 
   const openTreeFromSafeZip = async (path: string) => {
@@ -217,6 +231,7 @@ function App() {
           onCopyHtml={copyHtml}
           onHeaderUpdate={setSafeZipHeader}
         />
+        <footer className="app-footer">Rendexpress - v{APP_VERSION}</footer>
       </div>
     </div>
   )

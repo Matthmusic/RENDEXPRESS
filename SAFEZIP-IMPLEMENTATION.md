@@ -26,7 +26,7 @@ La fonctionnalité **Safe ZIP / Packaging** a été intégrée avec succès dans
   - Analyse de source
   - Progress bars en temps réel (copie + ZIP)
   - Indicateur de risque d'extraction
-  - Actions : Enregistrer ZIP, Ouvrir dossier, Ouvrir WeTransfer
+  - Actions : Enregistrer ZIP, Ouvrir dossier, Ouvrir Gofile
   - Gestion d'état complète avec hooks
 
 ## 📝 Fichiers modifiés
@@ -43,7 +43,7 @@ La fonctionnalité **Safe ZIP / Packaging** a été intégrée avec succès dans
   - `safezip:list-jobs`
   - `safezip:cleanup`
   - `safezip:open-folder`
-  - `safezip:open-wetransfer`
+  - `safezip:open-gofile`
 - Cleanup automatique au démarrage de l'app
 
 ### 2. Preload Script
@@ -172,7 +172,7 @@ Avantages :
 
 ### ✅ Actions supplémentaires
 - [x] Bouton "Ouvrir le dossier" (explorer vers OUT/)
-- [x] Bouton "Ouvrir WeTransfer" (navigateur)
+- [x] Bouton "Ouvrir Gofile" (navigateur)
 - [x] Bouton "Nettoyer" (manuel)
 - [x] Cleanup automatique au démarrage
 
@@ -254,11 +254,11 @@ Résultat attendu :
   - Les 2 plus anciens supprimés automatiquement
 ```
 
-### Test 7 : WeTransfer
+### Test 7 : Gofile
 ```
-Action : Cliquer "Ouvrir WeTransfer"
+Action : Cliquer "Ouvrir Gofile"
 Résultat attendu :
-  - Navigateur par défaut s'ouvre sur wetransfer.com
+  - Navigateur par défaut s'ouvre sur gofile.io
 ```
 
 ## 🔧 Configuration
@@ -378,8 +378,8 @@ ipcMain.handle('safezip:cleanup', async () => {...})
 ipcMain.handle('safezip:open-folder', async (_event, folderPath) => {...})
 // Returns: { success: boolean, error?: string }
 
-// Ouvrir WeTransfer
-ipcMain.handle('safezip:open-wetransfer', async () => {...})
+// Ouvrir Gofile
+ipcMain.handle('safezip:open-gofile', async () => {...})
 // Returns: { success: boolean, error?: string }
 ```
 
@@ -395,7 +395,7 @@ await window.api.safeZip.saveZip(job: SafeZipJob)
 await window.api.safeZip.listJobs()
 await window.api.safeZip.cleanup()
 await window.api.safeZip.openFolder(folderPath: string)
-await window.api.safeZip.openWeTransfer()
+await window.api.safeZip.openGofile()
 
 // Listeners (retournent une fonction cleanup)
 const unsubCopy = window.api.safeZip.onCopyProgress((progress) => {...})
@@ -420,7 +420,7 @@ unsubZip()
 6. Une fois "ZIP prêt à envoyer !" affiché :
    - Cliquer "Enregistrer le ZIP..." pour choisir l'emplacement final
    - Ou "Ouvrir le dossier" pour voir le ZIP dans l'explorateur
-   - Ou "Ouvrir WeTransfer" pour uploader
+   - Ou "Ouvrir Gofile" pour uploader
 7. Envoyer le ZIP au destinataire
 
 ### Extraction côté destinataire
@@ -447,7 +447,7 @@ unsubZip()
 - **Windows uniquement** : Optimisé pour Windows (chemins, caractères interdits)
 - **Pas de signature** : Le ZIP n'est pas signé numériquement
 - **Pas de chiffrement** : Le ZIP n'est pas chiffré (format standard)
-- **Pas d'upload auto** : Pas d'upload cloud automatisé (WeTransfer manuel)
+- **Pas d'upload auto** : Pas d'upload cloud automatisé (Gofile manuel)
 
 ## 📈 Performance
 
