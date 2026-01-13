@@ -10,7 +10,7 @@ type RenderResponse = {
 }
 
 const hasApi = () => typeof window !== 'undefined' && typeof (window as any).api !== 'undefined'
-const APP_VERSION = '0.1.8'
+const APP_VERSION = '0.1.9'
 
 function App() {
   const [html, setHtml] = useState('')

@@ -4,7 +4,7 @@
   "app": {
     "id": "rendexpress",
     "name": "Rendexpress",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "description": {
       "short": "G?n?rateur d?arborescence et outil SafeZip pour partage s?curis?",
       "long": "Rendexpress est une application Electron tout?en?un pour la gestion de dossiers. Elle g?n?re des arborescences HTML et texte pr?tes pour vos emails (Outlook, Gmail), et int?gre SafeZip : un outil pour analyser, corriger, compresser et partager vos dossiers via Gofile.io. Interface React ?l?gante, backend Python int?gr?, mises ? jour automatiques. La solution compl?te pour documenter et partager vos projets."
@@ -84,9 +84,17 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.1.8-Setup.exe"
+    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.1.9-Setup.exe"
   },
   "changelog": {
+    "0.1.9": {
+      "date": "2026-01-13",
+      "changes": [
+        "Fix critique: Ajout de 'which' comme dépendance directe",
+        "Résolution de l'erreur 'Cannot find module which' au démarrage",
+        "L'application démarre maintenant correctement après installation"
+      ]
+    },
     "0.1.8": {
       "date": "2026-01-13",
       "changes": [
