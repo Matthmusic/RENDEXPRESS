@@ -6,8 +6,8 @@
     "name": "Rendexpress",
     "version": "0.1.9",
     "description": {
-      "short": "G?n?rateur d?arborescence et outil SafeZip pour partage s?curis?",
-      "long": "Rendexpress est une application Electron tout?en?un pour la gestion de dossiers. Elle g?n?re des arborescences HTML et texte pr?tes pour vos emails (Outlook, Gmail), et int?gre SafeZip : un outil pour analyser, corriger, compresser et partager vos dossiers via Gofile.io. Interface React ?l?gante, backend Python int?gr?, mises ? jour automatiques. La solution compl?te pour documenter et partager vos projets."
+      "short": "Générateur d'arborescence et outil SafeZip pour partage sécurisé",
+      "long": "Rendexpress est une application Electron tout-en-un pour la gestion de dossiers. Elle génère des arborescences HTML et texte prêtes pour vos emails (Outlook, Gmail), et intègre SafeZip : un outil pour analyser, corriger, compresser et partager vos dossiers via Gofile.io. Interface React élégante, backend Python intégré, mises à jour automatiques. La solution complète pour documenter et partager vos projets."
     }
   },
   "resources": {
@@ -56,7 +56,7 @@
       "name": "Matthmusic",
       "url": "https://github.com/Matthmusic"
     },
-    "category": "Productivit?",
+    "category": "Productivité",
     "tags": [
       "productivite",
       "arborescence",
@@ -123,8 +123,8 @@
     "0.1.4": {
       "date": "2026-01-13",
       "changes": [
-        "UI SafeZip : boutons et badges clarifi?s, alignements optimis?s",
-        "Copie email am?lior?e (texte + lien cliquable)",
+        "UI SafeZip : boutons et badges clarifiés, alignements optimisés",
+        "Copie email améliorée (texte + lien cliquable)",
         "Dropzone plus compacte et zone cliquable"
       ]
     },
@@ -227,8 +227,8 @@
     "0.1.5": {
       "date": "2026-01-13",
       "changes": [
-        "UI SafeZip : boutons et badges clarifi?s, alignements optimis?s",
-        "Copie email am?lior?e (texte + lien cliquable)",
+        "UI SafeZip : boutons et badges clarifiés, alignements optimisés",
+        "Copie email améliorée (texte + lien cliquable)",
         "Dropzone plus compacte et zone cliquable"
       ]
     }
