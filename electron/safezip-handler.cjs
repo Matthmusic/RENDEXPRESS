@@ -679,14 +679,292 @@ async function createDirectZipFromSource(sourcePath, onProgress) {
   });
 }
 
+/**
+ * Create job directory for multiple sources
+ * Creates a fusion folder containing all source items
+ * @param {string[]} sourcePaths - Array of source paths
+ * @param {string} [customName] - Optional custom name for the ZIP
+ */
+async function createJobDirectoryMultiple(sourcePaths, customName = null) {
+  // Generate job name from custom name, first source, or use generic name
+  let baseName;
+  if (customName && customName.trim()) {
+    baseName = customName.trim();
+  } else if (sourcePaths.length === 1) {
+    // Single source: use its name without "Fusion" suffix
+    baseName = path.basename(sourcePaths[0]);
+  } else {
+    // Multiple sources without custom name: use first source + "Fusion"
+    baseName = sourcePaths.length > 0 ? `${path.basename(sourcePaths[0])}_Fusion` : 'Fusion';
+  }
+
+  const now = new Date();
+  const datePrefix = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+  const normalized = normalizeJobName(baseName);
+
+  const stagingRoot = getStagingRoot();
+  await fs.mkdir(stagingRoot, { recursive: true });
+
+  let jobName = `${datePrefix}_${normalized}`;
+  let counter = 1;
+
+  while (existsSync(path.join(stagingRoot, jobName))) {
+    jobName = `${datePrefix}_${normalized}-${counter}`;
+    counter++;
+  }
+
+  const jobPath = path.join(stagingRoot, jobName);
+  const dataPath = path.join(jobPath, 'DATA');
+  const outPath = path.join(jobPath, 'OUT');
+
+  await fs.mkdir(jobPath, { recursive: true });
+  await fs.mkdir(dataPath, { recursive: true });
+  await fs.mkdir(outPath, { recursive: true });
+
+  const job = {
+    id: jobName,
+    createdAt: new Date().toISOString(),
+    sourcePath: dataPath, // Use dataPath as source since we're copying multiple sources there
+    sourceName: jobName,
+    stagingPath: jobPath,
+    dataPath,
+    outPath,
+    status: 'CREATED',
+    zipName: null,
+    zipPath: null,
+    error: null,
+    stats: {
+      totalFiles: 0,
+      totalSize: 0,
+      copiedFiles: 0,
+      zippedFiles: 0,
+      skippedFiles: 0,
+      maxPathLength: 0
+    },
+    multipleSources: sourcePaths // Store original sources
+  };
+
+  await fs.writeFile(
+    path.join(jobPath, 'job.json'),
+    JSON.stringify(job, null, 2),
+    'utf8'
+  );
+
+  return job;
+}
+
+/**
+ * Copy multiple sources to staging DATA folder
+ */
+async function copyMultipleSourcesToStaging(job, onProgress) {
+  const { multipleSources, dataPath, stagingPath } = job;
+
+  // Update job status
+  await updateJob(stagingPath, { status: 'COPYING' });
+
+  // Scan all sources first to get total count
+  if (onProgress) onProgress({ phase: 'scanning', current: 0, total: 0, currentFile: '' });
+
+  let allFiles = [];
+  let totalSize = 0;
+  let maxPathLength = 0;
+
+  for (const sourcePath of multipleSources) {
+    const sourceName = path.basename(sourcePath);
+
+    // Check if source is a file or directory
+    const stats = await fs.stat(sourcePath);
+
+    if (stats.isDirectory()) {
+      // It's a directory - scan it
+      const { files, totalSize: sourceSize, maxPathLength: sourceMaxPath } = await scanDirectory(sourcePath);
+
+      // Prefix each file with its source folder name to avoid conflicts
+      const prefixedFiles = files.map(file => ({
+        ...file,
+        relativePath: path.join(sourceName, file.relativePath),
+        originalSource: sourcePath
+      }));
+
+      allFiles.push(...prefixedFiles);
+      totalSize += sourceSize;
+      maxPathLength = Math.max(maxPathLength, sourceMaxPath);
+    } else if (stats.isFile()) {
+      // It's a file - add it directly
+      const pathLength = sourcePath.length;
+      allFiles.push({
+        fullPath: sourcePath,
+        relativePath: sourceName, // Just the filename
+        size: stats.size,
+        pathLength,
+        originalSource: sourcePath
+      });
+      totalSize += stats.size;
+      maxPathLength = Math.max(maxPathLength, pathLength);
+    }
+  }
+
+  const errors = [];
+  let copiedCount = 0;
+
+  // Copy files
+  for (const file of allFiles) {
+    const destPath = path.join(dataPath, file.relativePath);
+
+    if (onProgress) {
+      onProgress({
+        phase: 'copying',
+        current: copiedCount,
+        total: allFiles.length,
+        currentFile: file.relativePath
+      });
+    }
+
+    const result = await copyFileWithRetry(file.fullPath, destPath);
+    if (result.success) {
+      copiedCount++;
+    } else {
+      errors.push({
+        file: file.relativePath,
+        reason: result.error
+      });
+    }
+  }
+
+  // Update job with stats
+  await updateJob(stagingPath, {
+    status: 'COPYING_DONE',
+    stats: {
+      ...job.stats,
+      totalFiles: allFiles.length,
+      totalSize,
+      copiedFiles: copiedCount,
+      skippedFiles: errors.length,
+      maxPathLength
+    }
+  });
+
+  return {
+    success: true,
+    totalFiles: allFiles.length,
+    copiedFiles: copiedCount,
+    skippedFiles: errors.length,
+    errors
+  };
+}
+
+/**
+ * Analyze multiple sources
+ */
+async function analyzeMultipleSources(sourcePaths) {
+  let totalFiles = 0;
+  let totalSize = 0;
+  let maxPathLength = 0;
+  let hasShortNames = false;
+  let allProblematicFiles = [];
+  let longestPath = '';
+
+  for (const sourcePath of sourcePaths) {
+    const shortNameCheck = checkPathForShortNames(sourcePath);
+    const sourceName = path.basename(sourcePath);
+
+    // Check if source is a file or directory
+    const stats = statSync(sourcePath);
+
+    if (stats.isDirectory()) {
+      // It's a directory - scan it
+      const { files, totalSize: sourceSize, hasShortNamesInFiles, problematicFiles, maxPathLength: sourceMaxPath } = await scanDirectory(sourcePath);
+
+      // Prefix problematic files with source name
+      const prefixedProblematic = problematicFiles.map(pf => ({
+        ...pf,
+        path: `${sourceName}/${pf.path}`,
+        fullPath: pf.fullPath
+      }));
+
+      totalFiles += files.length;
+      totalSize += sourceSize;
+
+      if (sourceMaxPath > maxPathLength) {
+        maxPathLength = sourceMaxPath;
+        longestPath = files.find(f => f.pathLength === sourceMaxPath)?.fullPath || '';
+      }
+
+      if (shortNameCheck.hasShortNames || hasShortNamesInFiles) {
+        hasShortNames = true;
+      }
+
+      allProblematicFiles.push(...prefixedProblematic);
+    } else if (stats.isFile()) {
+      // It's a file - just analyze its path length
+      const pathLength = sourcePath.length;
+
+      totalFiles += 1;
+      totalSize += stats.size;
+
+      if (pathLength > maxPathLength) {
+        maxPathLength = pathLength;
+        longestPath = sourcePath;
+      }
+
+      // Check if this file path has issues
+      if (pathLength > MAX_SAFE_PATH_LENGTH || shortNameCheck.hasShortNames) {
+        allProblematicFiles.push({
+          path: sourceName,
+          fullPath: sourcePath,
+          length: pathLength,
+          hasShortName: shortNameCheck.hasShortNames
+        });
+      }
+
+      if (shortNameCheck.hasShortNames) {
+        hasShortNames = true;
+      }
+    }
+  }
+
+  // Determine if safe for direct transfer
+  const isSafeForDirectTransfer = !hasShortNames && allProblematicFiles.length === 0;
+  const needsPreparation = !isSafeForDirectTransfer;
+
+  let riskLevel = 'ok';
+  if (maxPathLength > MAX_INTERNAL_PATH_DANGER || hasShortNames) {
+    riskLevel = 'danger';
+  } else if (maxPathLength > MAX_INTERNAL_PATH_WARNING) {
+    riskLevel = 'warning';
+  }
+
+  let shortNameWarning = null;
+  if (hasShortNames) {
+    shortNameWarning = 'Un ou plusieurs dossiers/fichiers sources contiennent des noms courts Windows (format 8.3 comme PROGRA~1). Cela indique que les chemins sont probablement trop longs. Risque élevé de problèmes lors de l\'extraction.';
+  }
+
+  return {
+    maxInternalPathLength: maxPathLength,
+    maxPathLength,
+    riskLevel,
+    totalFiles,
+    totalSize,
+    longestPath,
+    hasShortNames,
+    shortNameWarning,
+    isSafeForDirectTransfer,
+    needsPreparation,
+    problematicFiles: allProblematicFiles
+  };
+}
+
 module.exports = {
   createJobDirectory,
+  createJobDirectoryMultiple,
   copySourceToStaging,
+  copyMultipleSourcesToStaging,
   createZipFromData,
   saveZipToDestination,
   listJobs,
   cleanupOldJobs,
   analyzeSourcePath,
+  analyzeMultipleSources,
   getStagingRoot,
   createDirectZipFromSource
 };

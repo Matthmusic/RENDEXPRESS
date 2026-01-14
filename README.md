@@ -2,13 +2,16 @@
 
 Rendexpress est une application Electron + React avec backend Python pour :
 - générer une arborescence (HTML + texte) prête à coller dans un email,
-- préparer des ZIP “propres” via SafeZip (analyse, correction, upload Gofile).
+- préparer des ZIP "propres" via SafeZip (analyse, correction, upload Gofile).
 
 ## Fonctionnalités
-- Analyse des chemins trop longs Windows et préparation SafeZip.
-- Upload Gofile avec lien de téléchargement.
-- Copie HTML compatible Outlook + texte.
-- Interface sombre, workflow en 3 étapes.
+- **SafeZip multi-sources** : Glissez-déposez plusieurs fichiers et dossiers simultanément
+- Suppression individuelle des éléments ou vidage complet de la liste
+- Dialogue de nommage personnalisé pour les archives multi-sources
+- Analyse des chemins trop longs Windows et préparation SafeZip
+- Upload Gofile avec lien de téléchargement
+- Copie HTML compatible Outlook + texte
+- Interface sombre, workflow en 3 étapes
 
 ## Prérequis (dev)
 - Node.js 18+
@@ -32,7 +35,7 @@ npm run build:electron
 Le workflow `.github/workflows/release.yml` se déclenche sur un tag `v*` ou manuellement.
 Exemple :
 ```bash
-git tag v0.1.9
+git tag v0.2.0
 git push origin main --tags
 ```
 

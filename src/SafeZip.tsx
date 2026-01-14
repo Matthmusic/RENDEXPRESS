@@ -20,6 +20,13 @@ interface SafeZipProps {
   onHeaderUpdate?: (payload: { folder: string; status: string; loading: boolean }) => void
 }
 
+interface SourceItem {
+  id: string
+  path: string
+  name: string
+  type: 'file' | 'directory'
+}
+
 export default function SafeZip({
   onOpenTree,
   onClearTree,
@@ -29,7 +36,7 @@ export default function SafeZip({
   onCopyHtml,
   onHeaderUpdate
 }: SafeZipProps) {
-  const [sourcePath, setSourcePath] = useState<string | null>(null)
+  const [sourceItems, setSourceItems] = useState<SourceItem[]>([])
   const [currentJob, setCurrentJob] = useState<SafeZipJob | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [analysis, setAnalysis] = useState<PathAnalysis | null>(null)
@@ -45,6 +52,8 @@ export default function SafeZip({
   const [isDragging, setIsDragging] = useState(false)
   const [viewMode, setViewMode] = useState<'html' | 'text'>('html')
   const [bypassLongPaths, setBypassLongPaths] = useState(false)
+  const [showNameDialog, setShowNameDialog] = useState(false)
+  const [customZipName, setCustomZipName] = useState('')
   const cleanupCopyRef = useRef<(() => void) | null>(null)
   const cleanupZipRef = useRef<(() => void) | null>(null)
   const cleanupUploadRef = useRef<(() => void) | null>(null)
@@ -89,9 +98,9 @@ export default function SafeZip({
     }
   }, [])
 
-  // Auto-analyze when source path changes
+  // Auto-analyze when source items change
   useEffect(() => {
-    if (!sourcePath || !window.api?.safeZip) return
+    if (sourceItems.length === 0 || !window.api?.safeZip) return
 
     const analyzeSource = async () => {
       setWasCorrected(false)
@@ -100,7 +109,8 @@ export default function SafeZip({
       setBypassLongPaths(false)
 
       try {
-        const result = await window.api.safeZip.analyzeSource(sourcePath)
+        const sourcePaths = sourceItems.map(item => item.path)
+        const result = await window.api.safeZip.analyzeMultipleSources(sourcePaths)
         if (result.success && result.analysis) {
           setAnalysis(result.analysis)
           setPhase('idle')
@@ -116,7 +126,7 @@ export default function SafeZip({
     }
 
     analyzeSource()
-  }, [sourcePath])
+  }, [sourceItems])
 
   const canBypassLongPaths =
     !!analysis &&
@@ -125,17 +135,18 @@ export default function SafeZip({
     analysis.maxPathLength <= 250
 
   useEffect(() => {
-    if (!sourcePath || !analysis) return
+    if (sourceItems.length === 0 || !analysis) return
     const shouldAutoZip =
       (analysis.isSafeForDirectTransfer && !analysis.hasShortNames) ||
       (bypassLongPaths && canBypassLongPaths)
     if (!shouldAutoZip) return
-    if (autoZipSourceRef.current === sourcePath) return
+    const sourceKey = sourceItems.map(i => i.path).join('|')
+    if (autoZipSourceRef.current === sourceKey) return
     if (phase !== 'idle' || currentJob) return
 
-    autoZipSourceRef.current = sourcePath
+    autoZipSourceRef.current = sourceKey
     handlePrepare({ corrected: false })
-  }, [analysis, sourcePath, phase, currentJob, bypassLongPaths, canBypassLongPaths])
+  }, [analysis, sourceItems, phase, currentJob, bypassLongPaths, canBypassLongPaths])
 
   const showToast = (message: string, type: Toast['type'] = 'info') => {
     setToast({ message, type })
@@ -156,14 +167,20 @@ export default function SafeZip({
 
   const handlePickFolder = async () => {
     try {
-      const path = await window.api.pickFolder()
-      if (path) {
-        setSourcePath(path)
+      const folderPath = await window.api.pickFolder()
+      if (folderPath) {
+        const newItem: SourceItem = {
+          id: Date.now().toString(),
+          path: folderPath,
+          name: folderPath.split(/[\\/]/).pop() || folderPath,
+          type: 'directory'
+        }
+        setSourceItems(prev => [...prev, newItem])
         setError(null)
         setPhase('idle')
         setCurrentJob(null)
         setAnalysis(null)
-        showToast('Dossier sélectionné', 'success')
+        showToast('Dossier ajouté', 'success')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la sélection')
@@ -183,45 +200,6 @@ export default function SafeZip({
     setIsDragging(false)
   }
 
-  const getCommonPath = (paths: string[]) => {
-    if (paths.length === 0) return ''
-    const raw = paths.filter(Boolean)
-    if (raw.length === 0) return ''
-    const sep = raw[0].includes('\\') ? '\\' : '/'
-    const isUnc = raw[0].startsWith('\\\\')
-    const splitPaths = raw.map((p) => p.split(sep).filter(Boolean))
-    const minLen = Math.min(...splitPaths.map((p) => p.length))
-    const common: string[] = []
-    for (let i = 0; i < minLen; i += 1) {
-      const segment = splitPaths[0][i]
-      if (splitPaths.every((p) => p[i] === segment)) {
-        common.push(segment)
-      } else {
-        break
-      }
-    }
-    if (common.length === 0) return ''
-    let result = (isUnc ? '\\\\' : '') + common.join(sep)
-    if (common.length === 1 && common[0].endsWith(':')) {
-      result += sep
-    }
-    return result
-  }
-
-  const extractPathFromDataTransfer = (dt: DataTransfer) => {
-    const raw = dt.getData('text/uri-list') || dt.getData('text/plain')
-    if (!raw) return ''
-    const first = raw.split(/\r?\n/).find((line) => line && !line.startsWith('#'))
-    if (!first) return ''
-    if (first.startsWith('file://')) {
-      let decoded = decodeURIComponent(first.replace('file:///', '').replace('file://', ''))
-      if (/^[a-zA-Z]:\//.test(decoded)) {
-        decoded = decoded.replace(/\//g, '\\')
-      }
-      return decoded
-    }
-    return first
-  }
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
@@ -229,41 +207,62 @@ export default function SafeZip({
     setIsDragging(false)
 
     const items = Array.from(e.dataTransfer.items)
-    const dirItem = items.find(item => item.kind === 'file')
+    const newItems: SourceItem[] = []
 
-    if (dirItem) {
-      const entry = dirItem.webkitGetAsEntry()
-      if (entry && entry.isDirectory) {
-        const fileList = Array.from(e.dataTransfer.files || [])
-        const dirFile = dirItem.getAsFile()
-        const dirPath = (dirFile as any)?.path || ''
-        const directPath = (fileList[0] as any)?.path || ''
-        const apiPath = window.api?.getPathForFile
-        const dirPathFromApi = dirFile && apiPath ? apiPath(dirFile) : ''
-        const filePathFromApi = fileList[0] && apiPath ? apiPath(fileList[0]) : ''
-        const filePaths = fileList.map((file) => (file as any).path).filter(Boolean)
-        const commonPath = getCommonPath(filePaths)
-        const uriPath = extractPathFromDataTransfer(e.dataTransfer)
-        const path = dirPathFromApi || filePathFromApi || dirPath || directPath || commonPath || uriPath || (entry as any).fullPath
-        if (path) {
-          setSourcePath(path)
-          setError(null)
-          setPhase('idle')
-          setCurrentJob(null)
-          setAnalysis(null)
-          showToast('Dossier déposé', 'success')
-        }
-      } else {
-        showToast('Veuillez déposer un dossier, pas un fichier', 'error')
+    for (const item of items) {
+      if (item.kind !== 'file') continue
+
+      const entry = item.webkitGetAsEntry()
+      if (!entry) continue
+
+      const fileList = Array.from(e.dataTransfer.files || [])
+      const file = item.getAsFile()
+      const filePath = (file as any)?.path || ''
+      const apiPath = window.api?.getPathForFile
+      const filePathFromApi = file && apiPath ? apiPath(file) : ''
+
+      let itemPath = filePathFromApi || filePath || (entry as any).fullPath
+
+      if (!itemPath && fileList.length > 0) {
+        const firstFile = fileList[0]
+        itemPath = (firstFile as any)?.path || ''
       }
+
+      if (itemPath) {
+        const isDuplicate = sourceItems.some(existing => existing.path === itemPath)
+        if (!isDuplicate) {
+          newItems.push({
+            id: `${Date.now()}-${Math.random()}`,
+            path: itemPath,
+            name: itemPath.split(/[\\/]/).pop() || itemPath,
+            type: entry.isDirectory ? 'directory' : 'file'
+          })
+        }
+      }
+    }
+
+    if (newItems.length > 0) {
+      setSourceItems(prev => [...prev, ...newItems])
+      setError(null)
+      setPhase('idle')
+      setCurrentJob(null)
+      setAnalysis(null)
+      showToast(`${newItems.length} élément(s) ajouté(s)`, 'success')
     }
   }
 
   const handlePrepare = async ({ corrected }: { corrected: boolean }) => {
-    if (!sourcePath) return
+    if (sourceItems.length === 0) return
     if (!window.api?.safeZip) {
       setError('API SafeZip non disponible')
       showToast('API non disponible', 'error')
+      return
+    }
+
+    // If multiple sources, prompt for custom name first
+    if (sourceItems.length > 1 && !customZipName) {
+      setShowNameDialog(true)
+      setWasCorrected(corrected)
       return
     }
 
@@ -274,8 +273,10 @@ export default function SafeZip({
     setZipProgress(null)
 
     try {
-      // Create job
-      const jobResult = await window.api.safeZip.createJob(sourcePath)
+      // Create job with multiple sources
+      const sourcePaths = sourceItems.map(item => item.path)
+      const nameToUse = sourceItems.length > 1 ? customZipName : undefined
+      const jobResult = await window.api.safeZip.createJobMultiple(sourcePaths, nameToUse)
       if (!jobResult.success || !jobResult.job) {
         throw new Error(jobResult.error || 'Création du job échouée')
       }
@@ -332,6 +333,22 @@ export default function SafeZip({
     }
   }
 
+  const handleConfirmName = () => {
+    if (!customZipName.trim()) {
+      showToast('Veuillez entrer un nom', 'error')
+      return
+    }
+    setShowNameDialog(false)
+    // Trigger prepare with the name
+    handlePrepare({ corrected: wasCorrected })
+  }
+
+  const handleCancelName = () => {
+    setShowNameDialog(false)
+    setCustomZipName('')
+    setWasCorrected(false)
+  }
+
   const handleSaveZip = async () => {
     if (!currentJob) return
     if (!window.api?.safeZip) return
@@ -361,8 +378,41 @@ export default function SafeZip({
   }
 
   const handleOpenTree = () => {
-    if (!sourcePath || !onOpenTree) return
-    onOpenTree(sourcePath)
+    if (sourceItems.length === 0 || !onOpenTree) return
+    // Use first source item for tree generation
+    onOpenTree(sourceItems[0].path)
+  }
+
+  const handleRemoveItem = (id: string) => {
+    setSourceItems(prev => prev.filter(item => item.id !== id))
+    setCurrentJob(null)
+    setPhase('idle')
+    setAnalysis(null)
+    setError(null)
+    setUploadUrl(null)
+    setUploadProgress(null)
+    setCustomZipName('')
+    showToast('Élément supprimé', 'info')
+  }
+
+  const handleClearAll = () => {
+    setSourceItems([])
+    setCurrentJob(null)
+    setPhase('idle')
+    setAnalysis(null)
+    setCopyProgress(null)
+    setZipProgress(null)
+    setError(null)
+    setUploadUrl(null)
+    setUploadProgress(null)
+    setBypassLongPaths(false)
+    setWasCorrected(false)
+    setCustomZipName('')
+    autoZipSourceRef.current = null
+    if (onClearTree) {
+      onClearTree()
+    }
+    showToast('Liste vidée', 'info')
   }
 
   const handleUploadToGofile = async () => {
@@ -454,25 +504,6 @@ export default function SafeZip({
     }
   }
 
-  const handleClearSource = (event?: React.MouseEvent<HTMLButtonElement>) => {
-    if (event) event.stopPropagation()
-    setSourcePath(null)
-    setCurrentJob(null)
-    setPhase('idle')
-    setAnalysis(null)
-    setCopyProgress(null)
-    setZipProgress(null)
-    setError(null)
-    setUploadUrl(null)
-    setUploadProgress(null)
-    setBypassLongPaths(false)
-    setWasCorrected(false)
-    autoZipSourceRef.current = null
-    // Clear the tree in parent component
-    if (onClearTree) {
-      onClearTree()
-    }
-  }
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B'
@@ -501,18 +532,21 @@ export default function SafeZip({
       case 'idle':
       default:
         if (analysis) return 'Analyse terminée'
-        return sourcePath ? 'Prêt' : 'En attente'
+        return sourceItems.length > 0 ? 'Prêt' : 'En attente'
     }
   }
 
   useEffect(() => {
     if (!onHeaderUpdate) return
+    const folder = sourceItems.length > 0
+      ? `${sourceItems.length} élément(s)`
+      : ''
     onHeaderUpdate({
-      folder: sourcePath || '',
+      folder,
       status: getHeaderStatus(),
       loading: isWorking
     })
-  }, [sourcePath, phase, analysis, error, isWorking, onHeaderUpdate])
+  }, [sourceItems, phase, analysis, error, isWorking, onHeaderUpdate])
 
   return (
     <div className="safezip-container">
@@ -523,40 +557,182 @@ export default function SafeZip({
         </div>
       )}
 
+      {/* Custom Name Dialog */}
+      {showNameDialog && (
+        <div className="dialog-overlay" onClick={handleCancelName}>
+          <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#e2e8f0', fontSize: '18px' }}>
+              Nom du ZIP
+            </h3>
+            <p style={{ margin: '0 0 16px 0', color: '#94a3b8', fontSize: '14px' }}>
+              Entrez un nom pour votre archive ZIP (plusieurs sources détectées)
+            </p>
+            <input
+              type="text"
+              value={customZipName}
+              onChange={(e) => setCustomZipName(e.target.value)}
+              placeholder="Ex: MonProjet"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleConfirmName()
+                if (e.key === 'Escape') handleCancelName()
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: 'rgba(30, 41, 59, 0.8)',
+                border: '1px solid rgba(148, 163, 184, 0.3)',
+                borderRadius: '6px',
+                color: '#e2e8f0',
+                fontSize: '14px',
+                marginBottom: '20px',
+                outline: 'none'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleCancelName}
+                style={{
+                  padding: '8px 16px',
+                  background: 'rgba(51, 65, 85, 0.5)',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '6px',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmName}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Continuer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="layout">
         {/* Source Selection Panel */}
-        <div className={`panel safezip-source-panel ${sourcePath ? 'has-source' : 'no-source'}`}>
-          <h2>1. Dossier source</h2>
+        <div className={`panel safezip-source-panel ${sourceItems.length > 0 ? 'has-source' : 'no-source'}`}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2>1. Fichiers & dossiers source</h2>
+            {sourceItems.length > 0 && (
+              <button
+                className="btn btn-ghost btn-icon"
+                onClick={handleClearAll}
+                title="Vider la liste"
+                aria-label="Vider la liste"
+                style={{ color: '#ef4444' }}
+              >
+                <X size={20} />
+                Tout supprimer
+              </button>
+            )}
+          </div>
 
-          <div className={`source-row ${sourcePath ? 'has-source' : 'no-source'}`}>
+          <div className={`source-row ${sourceItems.length > 0 ? 'has-source' : 'no-source'}`}>
             <div className="source-left">
               <div
-                className={`dropzone ${sourcePath ? 'has-source' : ''} ${isDragging ? 'dragging' : ''}`}
+                className={`dropzone ${sourceItems.length > 0 ? 'has-source' : ''} ${isDragging ? 'dragging' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={sourcePath ? undefined : handlePickFolder}
-                style={{ cursor: sourcePath ? 'default' : 'pointer' }}
+                onClick={sourceItems.length === 0 ? handlePickFolder : undefined}
+                style={{ cursor: sourceItems.length === 0 ? 'pointer' : 'default' }}
               >
-                {sourcePath ? (
-                  <>
-                    <div className="dropzone-icon-wrap">
-                      <FolderOpen size={40} className="dropzone-folder-icon" />
+                {sourceItems.length > 0 ? (
+                  <div style={{ width: '100%' }}>
+                    <div style={{
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      padding: '4px'
+                    }}>
+                      {sourceItems.map(item => (
+                        <div key={item.id} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          background: 'rgba(51, 65, 85, 0.5)',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(148, 163, 184, 0.2)',
+                        }}>
+                          <FolderOpen size={16} style={{ flexShrink: 0, color: '#60a5fa' }} />
+                          <span style={{
+                            flex: 1,
+                            fontSize: '13px',
+                            color: '#e2e8f0',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }} title={item.path}>{item.name}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveItem(item.id)
+                            }}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              border: '1px solid rgba(239, 68, 68, 0.4)',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              color: '#fca5a5',
+                              fontSize: '12px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
+                              e.currentTarget.style.color = '#fee2e2'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'
+                              e.currentTarget.style.color = '#fca5a5'
+                            }}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid rgba(148, 163, 184, 0.2)',
+                      textAlign: 'center'
+                    }}>
                       <button
-                        className="dropzone-remove"
-                        onClick={handleClearSource}
-                        aria-label="Retirer le dossier"
+                        className="btn btn-secondary"
+                        onClick={handlePickFolder}
+                        style={{ fontSize: '13px' }}
                       >
-                        <X size={38} strokeWidth={3.6} />
+                        + Ajouter un élément
                       </button>
                     </div>
-                    <p className="dropzone-path">{sourcePath}</p>
-                  </>
+                  </div>
                 ) : (
                   <>
                     <FolderOpen size={32} />
-                    <p>Glissez-déposez un dossier ici ou cliquez dans la zone pour sélectionner un dossier</p>
+                    <p>Glissez-déposez des fichiers/dossiers ici ou cliquez pour sélectionner</p>
                   </>
                 )}
               </div>
@@ -564,7 +740,7 @@ export default function SafeZip({
 
             <div
               className={`source-right ${
-                sourcePath
+                sourceItems.length > 0
                   ? 'is-visible animate__animated animate__fadeIn'
                   : 'is-hidden'
               }`}
@@ -802,7 +978,7 @@ export default function SafeZip({
               <button
                 className="btn btn-primary btn-blink-orange"
                 onClick={() => handlePrepare({ corrected: true })}
-                disabled={!sourcePath || isWorking || phase === 'ready'}
+                disabled={sourceItems.length === 0 || isWorking || phase === 'ready'}
               >
                 {isWorking ? <Loader2 size={16} className="spinner" /> : <Package size={16} />}
                 Corriger le rendu
@@ -817,7 +993,7 @@ export default function SafeZip({
                   showToast('Bypass activé, création du ZIP...', 'info')
                   handlePrepare({ corrected: true })
                 }}
-                disabled={!sourcePath || isWorking || phase === 'ready'}
+                disabled={sourceItems.length === 0 || isWorking || phase === 'ready'}
               >
                 Forcer le ZIP (240-250)
               </button>

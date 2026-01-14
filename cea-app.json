@@ -4,7 +4,7 @@
   "app": {
     "id": "rendexpress",
     "name": "Rendexpress",
-    "version": "0.1.9",
+    "version": "0.2.0",
     "description": {
       "short": "Générateur d'arborescence et outil SafeZip pour partage sécurisé",
       "long": "Rendexpress est une application Electron tout-en-un pour la gestion de dossiers. Elle génère des arborescences HTML et texte prêtes pour vos emails (Outlook, Gmail), et intègre SafeZip : un outil pour analyser, corriger, compresser et partager vos dossiers via Gofile.io. Interface React élégante, backend Python intégré, mises à jour automatiques. La solution complète pour documenter et partager vos projets."
@@ -84,9 +84,20 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.1.9-Setup.exe"
+    "downloadUrl": "https://github.com/Matthmusic/RENDEXPRESS/releases/latest/download/Rendexpress-0.2.0-Setup.exe"
   },
   "changelog": {
+    "0.2.0": {
+      "date": "2026-01-14",
+      "changes": [
+        "SafeZip : Support multi-fichiers et multi-dossiers dans la dropzone",
+        "Possibilité de glisser-déposer plusieurs éléments simultanément",
+        "Suppression individuelle des éléments avec bouton X",
+        "Bouton 'Tout supprimer' pour vider la liste complète",
+        "Dialogue de nommage personnalisé pour les archives contenant plusieurs sources",
+        "Amélioration de l'UX avec animation et validation du nom de ZIP"
+      ]
+    },
     "0.1.9": {
       "date": "2026-01-13",
       "changes": [

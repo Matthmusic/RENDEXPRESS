@@ -25,8 +25,16 @@ contextBridge.exposeInMainWorld('api', {
   },
   safeZip: {
     createJob: (sourcePath) => ipcRenderer.invoke('safezip:create-job', sourcePath),
+    createJobMultiple: (sourcePaths, customName) => ipcRenderer.invoke('safezip:create-job-multiple', sourcePaths, customName),
     analyzeSource: (sourcePath) => ipcRenderer.invoke('safezip:analyze-source', sourcePath),
-    copyFiles: (job) => ipcRenderer.invoke('safezip:copy-files', job),
+    analyzeMultipleSources: (sourcePaths) => ipcRenderer.invoke('safezip:analyze-multiple-sources', sourcePaths),
+    copyFiles: (job) => {
+      // Automatically detect if it's a multiple sources job
+      if (job.multipleSources && job.multipleSources.length > 0) {
+        return ipcRenderer.invoke('safezip:copy-files-multiple', job)
+      }
+      return ipcRenderer.invoke('safezip:copy-files', job)
+    },
     createZip: (job) => ipcRenderer.invoke('safezip:create-zip', job),
     saveZip: (job) => ipcRenderer.invoke('safezip:save-zip', job),
     cleanup: () => ipcRenderer.invoke('safezip:cleanup'),

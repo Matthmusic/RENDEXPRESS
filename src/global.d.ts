@@ -36,7 +36,9 @@ declare global {
       onUpdateEvent: (callback: (data: any) => void) => () => void
       safeZip: {
         createJob: (sourcePath: string) => Promise<{ success: boolean; job?: SafeZipJob; error?: string }>
+        createJobMultiple: (sourcePaths: string[], customName?: string) => Promise<{ success: boolean; job?: SafeZipJob; error?: string }>
         analyzeSource: (sourcePath: string) => Promise<{ success: boolean; analysis?: PathAnalysis; error?: string }>
+        analyzeMultipleSources: (sourcePaths: string[]) => Promise<{ success: boolean; analysis?: PathAnalysis; error?: string }>
         copyFiles: (job: SafeZipJob) => Promise<{ success: boolean; result?: CopyResult; error?: string }>
         createZip: (job: SafeZipJob) => Promise<{ success: boolean; result?: ZipResult & { analysis?: PathAnalysis }; error?: string }>
         saveZip: (job: SafeZipJob) => Promise<{ success: boolean; result?: SaveZipResult; error?: string }>

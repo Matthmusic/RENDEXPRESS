@@ -285,6 +285,38 @@ ipcMain.handle('safezip:open-folder', async (_event, folderPath) => {
   }
 })
 
+// SafeZip Multiple Sources Handlers
+ipcMain.handle('safezip:create-job-multiple', async (_event, sourcePaths, customName = null) => {
+  try {
+    const job = await safeZipHandler.createJobDirectoryMultiple(sourcePaths, customName)
+    return { success: true, job }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:analyze-multiple-sources', async (_event, sourcePaths) => {
+  try {
+    const analysis = await safeZipHandler.analyzeMultipleSources(sourcePaths)
+    return { success: true, analysis }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('safezip:copy-files-multiple', async (_event, job) => {
+  try {
+    const result = await safeZipHandler.copyMultipleSourcesToStaging(job, (progress) => {
+      if (mainWindow) {
+        mainWindow.webContents.send('safezip:copy-progress', progress)
+      }
+    })
+    return { success: true, result }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+})
+
 // Gofile upload handlers
 ipcMain.handle('gofile:get-server', async () => {
   try {
